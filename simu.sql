@@ -9,6 +9,7 @@ create table simu(
 
 create table procesos(
 	idpc int,
+	descripcion varchar(30),
     pc_size int not null,
     ti int,
     ta int not null,
