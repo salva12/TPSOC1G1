@@ -6,7 +6,6 @@ from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QMessa
 from PyQt5 import uic
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtCore import *
-
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import plotly.figure_factory as ff
 import plotly
@@ -18,11 +17,9 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib
 matplotlib.use('Qt4Agg')
-#para bd 
 import mysql.connector
 from mysql.connector import Error
 from mysql.connector import errorcode
-
 
 
 
@@ -55,7 +52,6 @@ class DialogoresultSim(QDialog):
     self.setWindowTitle("Resultado Simulacion")
     uic.loadUi("resultSimulacion.ui",self)
 
-
 class Particiones_Fijas(QDialog):
   def __init__(self):
     QDialog.__init__(self)
@@ -82,7 +78,7 @@ class Ventana(QMainWindow):
   self.boton_GestProcesos.clicked.connect(self.abrirDialogoCarga)
   #self.botonGantt.clicked.connect(self.gantt)
   self.dialogo.pushButtonCargar.clicked.connect(self.cargarProcesosYRafagasenBD)
-  self.AceptarMem.clicked.connect(self.mostrarCargaProcesos)
+  self.AceptarMem.clicked.connect(self.AlmacenarTamMemIngresado)
   self.tam_Memoria=0
   self.por_so=0 
   self.checkbox=QTableWidgetItem()
@@ -92,8 +88,8 @@ class Ventana(QMainWindow):
   self.procesos_importados=[]
   self.result= []
   self.contador_act = 0
-  self.label_MemProcesos.setText('')
-  self.label_MemSO.setText('')
+  self.label_MemProcesos.setText('0 KB')
+  self.label_MemSO.setText('0 KB')
   self.spinBoxTamMemoria.setMaximum(1000000)
   self.spinBoxTamMemoria.setSingleStep(2**2)
   self.spinBoxPorcSO.setMaximum(90)
@@ -110,7 +106,7 @@ class Ventana(QMainWindow):
   self.carga_particionFijas.botonFinalizar.clicked.connect(self.graficar)
   self.dialogo.pushButtonAgregarRafaga.clicked.connect(self.agregar_fila_rafagas)
   self.dialogo.tableWidgetProcesos.setColumnCount(6)
-  self.dialogo.tableWidgetProcesos.setHorizontalHeaderLabels(['idpc','Descripcion','Prioridad','Tamano','TI','TA'])
+  self.dialogo.tableWidgetProcesos.setHorizontalHeaderLabels(['idpc','Descripcion','Prioridad','Tamaño','TI','TA'])
   self.carga_particionFijas.tableWidgetCargaParticion.setColumnCount(4)
   self.carga_particionFijas.tableWidgetCargaParticion.setHorizontalHeaderLabels(['idSim','idPart','dirRli','partSize'])
   self.carga_particionFijas.pushButtonAgregarParticion.clicked.connect(self.agregar_fila_particiones)
@@ -121,20 +117,53 @@ class Ventana(QMainWindow):
   self.dialogo.pushButtonImportar.clicked.connect(self.mostrarTablaImportar)
   self.dialogoImportar.tableWidgetImportar.setColumnCount(7)
   self.dialogoImportar.tableWidgetImportar.setHorizontalHeaderLabels([' ','idpc','Descripcion','Prioridad','Tamaño','TI','TA'])
-  self.dialogcompara.tableWidgetComparacion.setColumnCount(2)
-  self.dialogcompara.tableWidgetComparacion.setHorizontalHeaderLabels(['Tiempo1','Tiempo2'])
-  self.dialogoImportar.pushButtonImportar.clicked.connect(self.update_tablaProcesos)
-
+  self.dialogcompara.tableWidgetTEspera.setColumnCount(5)
+  self.dialogcompara.tableWidgetTEspera.setHorizontalHeaderLabels(['idpc','FCFS','Prioridades','RR','C.Multinivel'])
+  self.dialogcompara.tableWidgetTRetorno.setColumnCount(5)
+  self.dialogcompara.tableWidgetTRetorno.setHorizontalHeaderLabels(['idpc','FCFS','Prioridades','RR','C.Multinivel'])
   
+  self.dialogresultsim.tableWidgetCListo.setColumnCount(2)
+  self.dialogresultsim.tableWidgetCListo.setHorizontalHeaderLabels(['idpc','Ti',])
+
+  self.dialogoImportar.pushButtonImportar.clicked.connect(self.update_tablaProcesos)
+  self.dialogoImportar.pushButtonVertabla.clicked.connect(self.cargarTabla)
+  
+  #DATOS BD
+  self.host='localhost'
+  self.database='simulador'
+  self.user='root'
+  self.password='letra123'
      
   #considero que el calculo de los labels de tam de memoria para procesos y so, se hace recien cuando le 
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
  def mostrarResultSimulacion(self):
    self.dialogresultsim.move(910,325)
    self.dialogresultsim.exec_()
+   self.dialogresultsim.tableWidgetCListo.insertRow(0)
+   self.dialogresultsim.tableWidgetCListo.setItem(0,0,QTableWidgetItem('1'))
+   self.dialogresultsim.tableWidgetCListo.setItem(0,1,QTableWidgetItem('5'))
+   self.dialogresultsim.tableWidgetCListo.insertRow(1)
+   self.dialogresultsim.tableWidgetCListo.setItem(1,0,QTableWidgetItem('2'))
+   self.dialogresultsim.tableWidgetCListo.setItem(1,1,QTableWidgetItem('10'))
+   self.dialogresultsim.tableWidgetCListo.insertRow(2)
+   self.dialogresultsim.tableWidgetCListo.setItem(2,0,QTableWidgetItem('3'))
+   self.dialogresultsim.tableWidgetCListo.setItem(2,1,QTableWidgetItem('7'))
+   
 
  def mostrarComparacion(self):
    self.dialogcompara.exec_()
+   self.dialogcompara.tableWidgetTEspera.insertRow(0)
+   self.dialogcompara.tableWidgetTEspera.setItem(0,0,QTableWidgetItem('0'))
+   self.dialogcompara.tableWidgetTEspera.setItem(0,1,QTableWidgetItem('50'))
+   self.dialogcompara.tableWidgetTEspera.setItem(0,2,QTableWidgetItem('30'))
+   self.dialogcompara.tableWidgetTEspera.setItem(0,3,QTableWidgetItem('25'))
+   self.dialogcompara.tableWidgetTEspera.setItem(0,4,QTableWidgetItem('45'))
+   self.dialogcompara.tableWidgetTRetorno.insertRow(0)
+   self.dialogcompara.tableWidgetTRetorno.setItem(0,0,QTableWidgetItem('0'))
+   self.dialogcompara.tableWidgetTRetorno.setItem(0,1,QTableWidgetItem('70'))
+   self.dialogcompara.tableWidgetTRetorno.setItem(0,2,QTableWidgetItem('50'))
+   self.dialogcompara.tableWidgetTRetorno.setItem(0,3,QTableWidgetItem('65'))
+   self.dialogcompara.tableWidgetTRetorno.setItem(0,4,QTableWidgetItem('45'))
 
 
  def update_tablaProcesos(self):
@@ -169,10 +198,9 @@ class Ventana(QMainWindow):
     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nuevo_ta)
     print("Nuevo proceso actualizado en tabla")
 
-
  def generar_grafico_durante_simulacion(self):
    global conts
-   fig= plt.figure(figsize=(15,2))
+   fig= plt.figure('Mapa de memoria',figsize=(15,2))
    ax=fig.subplots()
    category_names=[]
    procesosejemplos=['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10']
@@ -214,15 +242,13 @@ class Ventana(QMainWindow):
    
    plt.show()
 
-
-
  def cargarTabla(self):
    print("entre")
    try:
-     connection = mysql.connector.connect(host='localhost',
-     database = 'simulador',
-     user='root',
-     password='letra123')
+     connection = mysql.connector.connect(host=self.host,
+     database = self.database,
+     user=self.user,
+     password=self.password)
      print("conecto")
      cur=connection.cursor()
      cur.execute("SELECT * FROM procesos")
@@ -252,9 +278,6 @@ class Ventana(QMainWindow):
 
 
        contador_rows_importar = contador_rows_importar + 1
-
-       
- #HAY QUE TERMINAR
    except mysql.connector.Error as error:
      print("Fallo al conectarse {}",format(error))
    else:
@@ -272,16 +295,14 @@ class Ventana(QMainWindow):
    #self.item.setCheckState(Qt.Unchecked) 
    #self.tableWidgetImportar.setItem(1,1,self.item)
    
-
-
  def agregar_fila_particiones(self):
    global cont_agregar_particion
    tampart= int(self.carga_particionFijas.lineEditTam.text())
    global rli
    global conts
    if ((self.valor_memoria_procesos - tampart>=0) and self.valor_memoria_procesos != 0):
-     self.valor_memoria_procesos -= tampart
-     self.carga_particionFijas.label_MemDisp.setText("Memoria Disponible: "+str(self.valor_memoria_procesos) + " KB")
+     self.valor_memoria_procesos= self.valor_memoria_procesos - tampart
+     self.carga_particionFijas.label_MemDisp.setText("Memoria Disponible: "+str(round(self.valor_memoria_procesos,2)) + " KB")
      self.carga_particionFijas.tableWidgetCargaParticion.insertRow(cont_agregar_particion)
      id_sim = QTableWidgetItem(str(conts))
      tam_part = QTableWidgetItem(str(self.carga_particionFijas.lineEditTam.text()))
@@ -297,10 +318,6 @@ class Ventana(QMainWindow):
      print(self.lista_graficos)
      self.carga_particionFijas.lineEditTam.setText('')
      
-
-
-
-
  def agregar_fila_rafagas(self):
    global contr
    #con este comando agrego una fila a la tabla
@@ -319,7 +336,7 @@ class Ventana(QMainWindow):
  
  def generar_grafico(self):
    global conts
-   fig= plt.figure(figsize=(9.2, 5))
+   fig= plt.figure('Particiones',figsize=(9.2, 5))
    ax=fig.subplots()
    #graph_data= open('prueba.txt','r').read()
    #lines=graph_data.split('\n')
@@ -327,10 +344,10 @@ class Ventana(QMainWindow):
    ys=[]
    try:
      global conts
-     connection = mysql.connector.connect(host='localhost',
-     database = 'simulador',
-     user='root',
-     password='letra123')
+     connection = mysql.connector.connect(host=self.host,
+     database = self.database,
+     user=self.user,
+     password=self.password)
      for elemento in self.lista_graficos:
        print(elemento)
        if len(elemento)>1:
@@ -380,15 +397,15 @@ class Ventana(QMainWindow):
    #ani=animation.FuncAnimation(fig,animate(), interval=3000,repeat=True)
    plt.show()
  
- def mostrarCargaProcesos(self):
-   self.carga_particionFijas.label_MemDisp.setText('Memoria disponible:'+str(self.valor_memoria_procesos) + " KB")
+ def AlmacenarTamMemIngresado(self):
+   self.carga_particionFijas.label_MemDisp.setText('Memoria disponible: '+str(round(self.valor_memoria_procesos,2)) + " KB")
    #Carga o actualiza en BD el tamaño memoria y porcentaje so ingresado
    try:
      global conts
-     connection = mysql.connector.connect(host='localhost',
-     database = 'simulador',
-     user='root',
-     password='letra123')
+     connection = mysql.connector.connect(host=self.host,
+     database = self.database,
+     user=self.user,
+     password=self.password)
         
      if conts==0:
        conts=conts+1
@@ -459,7 +476,6 @@ class Ventana(QMainWindow):
    #nota: el set enable anda con los line Edit
  
  def fijaselected(self):
-   
    #hace un disable del radio button de worst fit
    self.radioButton_Worst.setEnabled(False)
    self.radioButton_Best.setEnabled(True)
@@ -468,8 +484,8 @@ class Ventana(QMainWindow):
    if self.por_so >0:
     self.valor_so = ((self.tam_Memoria)*(self.por_so))/100
     self.valor_memoria_procesos = self.tam_Memoria-self.valor_so
-    self.label_MemProcesos.setText('\n'+str(self.valor_memoria_procesos) + " KB")
-    self.label_MemSO.setText('\n'+str(self.valor_so) + " KB") 
+    self.label_MemProcesos.setText(''+str(round(self.valor_memoria_procesos,2)) + " KB")
+    self.label_MemSO.setText(''+str(self.valor_so) + " KB") 
 
  def actTamMemoria(self):
    self.tam_Memoria = self.spinBoxTamMemoria.value()
@@ -481,10 +497,11 @@ class Ventana(QMainWindow):
 
  def cargarProcesosYRafagasenBD(self):
    try:
-     connection = mysql.connector.connect(host='localhost',
-     database = 'simulador',
-     user='root',
-     password='letra123')
+     connection = mysql.connector.connect(host=self.host,
+     database = self.database,
+     user=self.user,
+     password=self.password)
+
      #guardo en variables los datos del formulario, para despues ponerlos en el INSERT
      descripcion = self.dialogo.lineEditDescrip.text() #cada uno de estos comandos .text() obtiene el texto que fui poniendo en cada linea del formulario
      t_arribo = int(self.dialogo.spinBoxTiempoarr.text()) #hago un casting a int, pq en la bd los declaro como INT
@@ -572,12 +589,13 @@ class Ventana(QMainWindow):
   #tabla.setColumnCount(2)
   #tabla.setHorizontalHeaderLabels(['hola','jajaja'])
   df = [dict(Task="CPU", Start='0', Finish='2',Resource='Proceso1'),
-  dict(Task="CPU", Start='1', Finish='3',Resource='Proceso2'),
-  dict(Task='CPU',Start='3',Finish='6',Resource='Proceso3'),
+  dict(Task="CPU", Start='1', Finish='5',Resource='Proceso2'),
+  #dict(Task='CPU',Start='3',Finish='6',Resource='Proceso3'),
   dict(Task="ES", Start='2', Finish='5',Resource='Proceso1'),
-  dict(Task="ES", Start='4', Finish='6',Resource='Proceso2'),
-  dict(Task="ES", Start='5', Finish='9',Resource='Proceso3'),
-  dict(Task="CPU", Start='5', Finish='9',Resource='Proceso1'),]
+  dict(Task="ES", Start='3', Finish='6',Resource='Proceso2'),
+  #dict(Task="ES", Start='6', Finish='9',Resource='Proceso3'),
+  dict(Task="CPU", Start='5', Finish='6',Resource='Proceso1'),
+  dict(Task="CPU", Start='6', Finish='8',Resource='Proceso2'),]
   fig = ff.create_gantt(df,index_col='Resource',show_colorbar=True,group_tasks=True,width=1200,height=400)
   #estas dos lineas son para que pueda poner numeros en lugar de fechas
   fig.layout.xaxis.rangeselector = None
