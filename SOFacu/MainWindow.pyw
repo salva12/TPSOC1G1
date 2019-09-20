@@ -80,12 +80,15 @@ class Ventana(QMainWindow):
  def gantt(self):
   #aca armo el diagrama de gantt
   #es un ej nomas, con fechas y demas
-  df = [dict(Task="Job A", Start='2009-01-01', Finish='2009-02-28'),
-  dict(Task="Job B", Start='2009-03-05', Finish='2009-04-15'),
-  dict(Task="Job C", Start='2009-02-20', Finish='2009-05-30'),
-  dict(Task="Job D", Start='2009-05-25', Finish='2009-06-18'),
-  dict(Task="Job E", Start='2009-06-05', Finish='2009-06-15'),]
+  df = [dict(Task="Proceso1", Start='0', Finish='2'),
+  dict(Task="Proceso2", Start='1', Finish='3'),
+  dict(Task="Proceso3", Start='3', Finish='7'),
+  dict(Task="Proceso4", Start='4', Finish='6'),
+  dict(Task="Proceso5", Start='5', Finish='9'),]
   fig = ff.create_gantt(df)
+  #estas dos lineas son para que pueda poner numeros en lugar de fechas
+  fig.layout.xaxis.rangeselector = None
+  fig.layout.xaxis.type = 'linear'
   #con el auto_open = False hago que no se me abra automaticamente una ventana del navegador
   plotly.offline.plot(fig, filename='diagrama_gantt.html',auto_open=False)
   #guardo el diagrama en la carpeta donde esta este archivo .pyw, en un formato .html
