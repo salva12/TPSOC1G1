@@ -132,7 +132,7 @@ class Ventana(QMainWindow):
   self.host='localhost'
   self.database='simulador'
   self.user='root'
-  self.password='letra123'
+  self.password='administrador'
      
   #considero que el calculo de los labels de tam de memoria para procesos y so, se hace recien cuando le 
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
