@@ -128,6 +128,7 @@ class Ventana(QMainWindow):
   self.dialogoImportar.pushButtonImportar.clicked.connect(self.update_tablaProcesos)
   self.dialogoImportar.pushButtonVertabla.clicked.connect(self.cargarTabla)
   
+  
   #DATOS BD
   self.host='localhost'
   self.database='simulador'
@@ -167,8 +168,6 @@ class Ventana(QMainWindow):
 
 
  def update_tablaProcesos(self):
-   
-
    for i in self.result:
      item= self.dialogoImportar.tableWidgetImportar.item(self.contador_act,0)
      
@@ -496,6 +495,17 @@ class Ventana(QMainWindow):
    print(self.por_so)
 
  def cargarProcesosYRafagasenBD(self):
+   def limpiar_carga_rafagas():
+     global contr
+     contr = 0
+     self.dialogo.tableWidgetRafaga.setRowCount(0)
+     self.dialogo.lineEdit_Tiempo.setText(" ")
+     self.dialogo.lineEditDescrip.setText(" ")
+     self.dialogo.spinBoxPriori.setValue(0)
+     self.dialogo.spinBoxTamProc.setValue(0)
+     self.dialogo.spinBoxTiempoarr.setValue(0)
+   
+   
    try:
      connection = mysql.connector.connect(host=self.host,
      database = self.database,
@@ -572,6 +582,10 @@ class Ventana(QMainWindow):
      if(connection.is_connected()):
       connection.close()
       print("Conexion cerrada")
+
+   limpiar_carga_rafagas()
+   #aca limpio los valores que quedaron antes de cargar 
+   
 
  def abrirDialogoCarga(self): #bueno, sentiende por el nombre lo que hace el metodo supongo, ejecuta la nueva ventana o dialogo de carga
    self.dialogo.exec_()
