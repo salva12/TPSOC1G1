@@ -1,7 +1,7 @@
 #Esto es un Best fit con particion fija
 from tabulate import tabulate
 
-#esto lo dejo por las dudas, si lo queres usar
+
 #tam_mem es tamano memoria
 def tabla(m):
     headers=['id particion','direccion comienzo','estado particion','size','idproceso','fraginterna']
@@ -48,8 +48,7 @@ def asignacionp(mem,n,np):
             print('no existe particion que soporte el proceso. Se procedera a ejecutar el siguiente proceso')
     return(mem)
 
-#una cosa antes de que sigas, esto es la parte de particion que teoricamente ya tenemos resuelto. 
-# Puse porque quiero chusmear lo que guardo en mem.append
+
 #self.lista_graficos.append([cont_agregar_particion,tampart,rli])
 #aqui es donde guardamos todas las particiones creadas
 n_proceso=8
