@@ -267,10 +267,10 @@ class Ventana(QMainWindow):
      if cola_listos[0][4]==0:
        cola_listos.remove(cola_listos[0])
      clock=clock+1
-        #Agrego la fila completa con todos los datos cargados a los resultados
-        #['idpc','Descripcion','Prioridad','Tamaño','TI','TA']
-   self.procesoparaprobar=procesoresultado
-
+       #Agrego la fila completa con todos los datos cargados a los resultados
+       #['idpc','Descripcion','Prioridad','Tamaño','TI','TA']
+   self.procesoparaprobar=procesoresultado 
+   
  def metodo_mq(self):
    print("Metodo colas multiples")
 
