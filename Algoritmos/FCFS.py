@@ -3,6 +3,11 @@ def tabla(m):
     headers=['tiempo','id particion','descripcion']
     print(tabulate(m,headers, tablefmt='grid'))
 
+
+#en si es esto?
+#dict(Task="CPU", Start='0', Finish='2',Resource='Proceso1')
+#se necesita RLI y el TI del proceso
+
 def FCFS(procesos):
     #Primero que nada ordeno la lista de procesos según orden de llegada ta
     procesos.sort(key=lambda procesos: procesos[5])

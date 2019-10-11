@@ -57,3 +57,4 @@ procesos= [[1,'aaa',0,25,20,2],
 [8,'hhh',6,200,7,8]]
 
 Prioridades(procesos)
+

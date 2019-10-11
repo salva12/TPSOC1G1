@@ -602,6 +602,8 @@ class Ventana(QMainWindow):
   #tabla= QTableWidget()
   #tabla.setColumnCount(2)
   #tabla.setHorizontalHeaderLabels(['hola','jajaja'])
+
+  
   df = [dict(Task="CPU", Start='0', Finish='2',Resource='Proceso1'),
   dict(Task="CPU", Start='1', Finish='5',Resource='Proceso2'),
   #dict(Task='CPU',Start='3',Finish='6',Resource='Proceso3'),

@@ -3,6 +3,7 @@ def tabla(m):
     headers=['tiempo','id particion','descripcion']
     print(tabulate(m,headers, tablefmt='grid'))
 
+
 def RR(procesos):
     print('RR')
     clock = 0
@@ -38,6 +39,8 @@ def RR(procesos):
         #print(str(valor[0]) + '\t'+str(contador_muestreo))
         contador_muestreo = contador_muestreo + 1
     tabla(aux)
+    print(processPerClock)
+    print(aux)
 
 
 procesos= [[1,'aaa',0,25,20,2],
@@ -50,3 +53,4 @@ procesos= [[1,'aaa',0,25,20,2],
 [8,'hhh',6,200,7,8]]
 
 RR(procesos)
+
