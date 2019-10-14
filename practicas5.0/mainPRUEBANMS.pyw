@@ -170,7 +170,6 @@ class Ventana(QMainWindow):
 
  def metodo_rr(self):
     print('RR')
-    global procesos_rr
     procesos= [[1,'aaa',0,25,20,2],
     [2,'bbb',0,130,20,1],
     [3,'ccc',3,65,60,0],
@@ -185,33 +184,42 @@ class Ventana(QMainWindow):
 
     procesos.sort(key = lambda m: (m[5],m[4]))
     #print(procesos)
+    i = 0
     while len(procesos) != 0:
-        flag = False
-        for i in range(len(procesos)):
-            ti=procesos[i][4]
-            for j in range(quantom):
-                if ti > 0:
-                    ti = ti - 1
-                    procesos[i][4] = ti
-                    #print(ti)
-                    processPerClock.append(procesos[i]) 
-                else:
-                    #print("0")
-                    newTmp = i
-                    flag = True
-                    break
-        if flag == True:
-            del procesos[newTmp]
+        #flag = False
+        #for i in range(len(procesos)):
+        ti=procesos[i][4]
+        b = True
+        q= quantom
+        if ti >= q:
+          ti=ti-q
+          aux=procesos[i].copy()
+          if ti>0:
+            procesos[i][4] = ti
+            aux[4]=q
+            i=i+1
+          else:
+            del procesos[i]
+          q=0
+          processPerClock.append(aux)
+        else:
+          q=q-ti
+          processPerClock.append(procesos[i])
+          del procesos[i]
+        if i==len(procesos):
+          i=0
     #print('PROCESO\tTIEMPO')
     aux=[]
     contador_muestreo =1
+    """
     for valor in processPerClock:
         aux.append([contador_muestreo,valor[0],valor[1]])
         #print(str(valor[0]) + '\t'+str(contador_muestreo))
         contador_muestreo = contador_muestreo + 1
+    """
     #tabla(aux)
-    procesos_rr = processPerClock
-    print(procesos_rr)
+    #procesos_rr = processPerClock
+    #print(procesos_rr)
     self.procesoparaprobar=processPerClock
     
 
