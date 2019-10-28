@@ -103,6 +103,33 @@ class Ventana(QMainWindow):
   
   self.clock=0
   
+  #ACA DESABILITO TODOS LOS CAMPOS DEL MAIN, Y LOS VOY HABILITANDO A MEDIDA QUE SE CUMPLEN LOS PASOS
+  self.spinBoxPorcSO.setEnabled(False)
+  self.radioButton_Fijas.setEnabled(False)
+  self.radioButton_Variables.setEnabled(False)
+  self.radioButton_First.setEnabled(False)
+  self.radioButton_Best.setEnabled(False)
+  self.radioButton_Worst.setEnabled(False)
+  self.AceptarMem.setEnabled(False)
+  self.boton_GestProcesos.setEnabled(False)
+  self.comboBox_Algoritmos.setEnabled(False)
+  self.label_Algoritmo.setEnabled(False)
+  self.spinBox_Quantum.setEnabled(False)
+  self.label_Quantum.setEnabled(False)
+  self.pushButton_AceptarProc.setEnabled(False)
+  self.pushButtonComparar.setEnabled(False)
+  self.pushButton_Simular.setEnabled(False)
+
+
+
+  #ZONA DE FLAGS DE CONTROL DE INTERFAZ
+  self.flagporcSO=False
+  self.flagParticionesCargadas= False
+  self.flagProcesosCargados = False
+
+
+
+
   self.MQ = False
   self.q=0
   self.quantom=0
@@ -116,7 +143,9 @@ class Ventana(QMainWindow):
   self.spinBoxTamMemoria.valueChanged.connect(self.actTamMemoria)
   #self.spinBoxTamMemoria.valueChanged.connect(self.updateLabels)
   self.spinBoxPorcSO.valueChanged.connect(self.actPorcSO)
+  self.spinBoxPorcSO.valueChanged.connect(self.checkflagporcSO)
   self.spinBoxPorcSO.valueChanged.connect(self.updateLabels)
+  self.spinBox_Quantum.valueChanged.connect(self.checkQuantum)
   self.spinBoxTamMemoria.valueChanged.connect(self.updateLabels)
   self.radioButton_Fijas.toggled.connect(self.fijaselected)
   self.radioButton_Variables.toggled.connect(self.variableselected)
@@ -178,12 +207,26 @@ class Ventana(QMainWindow):
   #DATOS BD
   self.host='localhost'
   self.database='simulador'
-  self.user='c1g1'
-  self.password='1234'
+  self.user='root'
+  self.password='letra123'
      
   #considero que el calculo de los labels de tam de memoria para procesos y so, se hace recien cuando le 
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
   #muy feo, pero anda jajajaja
+
+ def checkQuantum(self):
+   if self.spinBox_Quantum.value()>0:
+     self.pushButton_AceptarProc.setEnabled(True)
+
+ def checkflagporcSO(self):
+   if self.flagporcSO and self.spinBoxTamMemoria.value()>0 and self.spinBoxPorcSO.value()>0:
+     self.radioButton_Fijas.setEnabled(True)
+     self.radioButton_Variables.setEnabled(True)
+   else:
+     self.radioButton_Fijas.setEnabled(False)
+     self.radioButton_Variables.setEnabled(False)
+     
+
  def inicializarOpcMQ(self):
    self.dialogoMQ.label_algCola1.setEnabled(True)
    self.dialogoMQ.label_algCola2.setEnabled(True)
@@ -992,8 +1035,13 @@ class Ventana(QMainWindow):
 
  def graficar(self):
    self.carga_particionFijas.hide()
+   self.flagParticionesCargadas=True
+   self.habilitarGestionarProcesos()
    self.generar_grafico()
  
+ def habilitarGestionarProcesos(self):
+   self.boton_GestProcesos.setEnabled(True)
+
  def generar_grafico(self):
    global conts
    fig= plt.figure('Particiones',figsize=(9.2, 5))
@@ -1134,22 +1182,37 @@ class Ventana(QMainWindow):
 
  def variableselected(self):
    self.radioButton_Worst.setEnabled(True)
+   if self.radioButton_Best.isChecked():
+     self.radioButton_Best.setChecked(False)
    self.radioButton_Best.setEnabled(False)
+   if not self.radioButton_First.isEnabled():
+     self.radioButton_First.setEnabled(True)
    #nota: el set enable anda con los line Edit
  
  def fijaselected(self):
    #hace un disable del radio button de worst fit
+   print(self.radioButton_Worst.isChecked())
+   if self.radioButton_Worst.isChecked():
+    self.radioButton_Worst.setChecked(False)
    self.radioButton_Worst.setEnabled(False)
    self.radioButton_Best.setEnabled(True)
+   self.radioButton_First.setEnabled(True)
+   
 
  def firstselected(self):
    self.met_asig='FF'
+   if not self.AceptarMem.isEnabled():
+     self.AceptarMem.setEnabled(True)
  
  def bestselected(self):
    self.met_asig='BF'
+   if not self.AceptarMem.isEnabled():
+     self.AceptarMem.setEnabled(True)
 
  def worstselected(self):
    self.met_asig='WF'
+   if not self.AceptarMem.isEnabled():
+     self.AceptarMem.setEnabled(True)
 
 
  def updateLabels(self):
@@ -1160,12 +1223,22 @@ class Ventana(QMainWindow):
     self.label_MemSO.setText(''+str(self.valor_so) + " KB") 
 
  def actTamMemoria(self):
-   self.tam_Memoria = self.spinBoxTamMemoria.value()
-   print(self.tam_Memoria)
+   if self.spinBoxTamMemoria.value()>0:
+    self.tam_Memoria = self.spinBoxTamMemoria.value()
+    print(self.tam_Memoria)
+    self.spinBoxPorcSO.setEnabled(True)
 
  def actPorcSO(self):
    self.por_so=self.spinBoxPorcSO.value()
    print(self.por_so)
+   self.flagporcSO=True
+
+
+ def habilitarAlgYQuantum(self):
+   self.comboBox_Algoritmos.setEnabled(True)
+   self.label_Algoritmo.setEnabled(True)
+   self.spinBox_Quantum.setEnabled(True)
+   self.label_Quantum.setEnabled(True)
 
  def cargarProcesosYRafagasenBD(self):
    def limpiar_carga_rafagas():
@@ -1177,6 +1250,8 @@ class Ventana(QMainWindow):
      self.dialogo.spinBoxPriori.setValue(0)
      self.dialogo.spinBoxTamProc.setValue(0)
      self.dialogo.spinBoxTiempoarr.setValue(0)
+     self.flagProcesosCargados=True
+     self.habilitarAlgYQuantum()
    
    
    try:
@@ -1265,8 +1340,8 @@ class Ventana(QMainWindow):
    self.dialogo.exec_()
    self.dialogo.lineEditDescrip.setText('')
    #self.dialogo.spinBoxTiempoarr.setText('')
-   self.dialogo.spinBoxTamProc.setText('')
-   self.dialogo.spinBoxPriori.setText('')
+   self.dialogo.spinBoxTamProc.setValue(0)
+   self.dialogo.spinBoxPriori.setValue(0)
    while (self.dialogo.tableWidgetRafaga.rowCount()>0):
     self.dialogo.tableWidgetRafaga.removeRow(0)
   
