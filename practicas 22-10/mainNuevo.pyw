@@ -20,7 +20,7 @@ matplotlib.use('Qt4Agg')
 import mysql.connector
 from mysql.connector import Error
 from mysql.connector import errorcode
-
+#
 class Dialogo(QDialog):
   def __init__(self):
     super().__init__()
@@ -101,13 +101,49 @@ class Ventana(QMainWindow):
   self.procesoRR =[]
   self.procesoPRIORIDAD = []
   
+
+
+  #ACA DESABILITO TODOS LOS CAMPOS DEL MAIN, Y LOS VOY HABILITANDO A MEDIDA QUE SE CUMPLEN LOS PASOS
+  self.spinBoxPorcSO.setEnabled(False)
+  self.radioButton_Fijas.setEnabled(False)
+  self.radioButton_Variables.setEnabled(False)
+  self.radioButton_First.setEnabled(False)
+  self.radioButton_Best.setEnabled(False)
+  self.radioButton_Worst.setEnabled(False)
+  self.AceptarMem.setEnabled(False)
+  self.boton_GestProcesos.setEnabled(False)
+  self.comboBox_Algoritmos.setEnabled(False)
+  self.label_Algoritmo.setEnabled(False)
+  self.spinBox_Quantum.setEnabled(False)
+  self.label_Quantum.setEnabled(False)
+  self.pushButton_AceptarProc.setEnabled(False)
+  self.pushButtonComparar.setEnabled(False)
+  self.pushButton_Simular.setEnabled(False)
+
+
+  #ZONA DE FLAGS DE CONTROL DE INTERFAZ
+  self.flagporcSO=False
+  self.flagParticionesCargadas= False
+  self.flagProcesosCargados = False
+
+
+
+
+
   self.clock=0
-  
-  self.MQ = False
+  #obtener desde interfaz
+  self.cant_cola=3
+  #obtener desde interfaz
+  self.lista_algoritmos = ['rr','fcfs','prioridades','rr','fcfs']
+  self.listAlgoritmoInt=[]
+  self.colas_multinivel = [[],[],[],[],[]]
+  self.mem_variable=[]
+  self.Mq = False
   self.q=0
   self.quantom=0
+  self.idpart=0
   self.listaprocesos= []
-  self.listaImportarProcesos = []
+  self.listaImportarProcesos=[]
   self.label_MemProcesos.setText('0 KB')
   self.label_MemSO.setText('0 KB')
   self.spinBoxTamMemoria.setMaximum(1000000)
@@ -118,6 +154,7 @@ class Ventana(QMainWindow):
   self.spinBoxTamMemoria.valueChanged.connect(self.actTamMemoria)
   #self.spinBoxTamMemoria.valueChanged.connect(self.updateLabels)
   self.spinBoxPorcSO.valueChanged.connect(self.actPorcSO)
+  self.spinBoxPorcSO.valueChanged.connect(self.checkflagporcSO)
   self.spinBoxPorcSO.valueChanged.connect(self.updateLabels)
   self.spinBoxTamMemoria.valueChanged.connect(self.updateLabels)
   self.radioButton_Fijas.toggled.connect(self.fijaselected)
@@ -135,7 +172,6 @@ class Ventana(QMainWindow):
   self.carga_particionFijas.tableWidgetCargaParticion.setHorizontalHeaderLabels(['idSim','idPart','dirRli','partSize'])
   self.carga_particionFijas.pushButtonAgregarParticion.clicked.connect(self.agregar_fila_particiones)
   self.dialogoImportar.pushButtonCargar.clicked.connect(self.loadProceso)
-  
 
   self.pushButton_Simular.clicked.connect(self.asignacion_memoria)
 
@@ -143,8 +179,17 @@ class Ventana(QMainWindow):
   #cosas que disparan al apretar "Simular" en Ventana
   #self.pushButton_Simular.clicked.connect(self.gantt) #vamos a ver que hacemos con esto
   
-  #si,te
-  #################################self.pushButton_Simular.clicked.connect(self.ejecutar_algoritmos) 
+  
+
+
+
+
+
+
+
+
+  
+  #self.pushButton_Simular.clicked.connect(self.ejecutar_algoritmos) 
   #llama a metodo fcfs cuando se apreta el boton de simular
   #self.pushButton_Simular.clicked.connect(self.metodo_fcfs)
   #llama a metodo prioridad cuando se apreta el boton de simular
@@ -162,7 +207,7 @@ class Ventana(QMainWindow):
   self.pushButton_AceptarProc.clicked.connect(self.aceptar_algoritmo_presionado)
   self.dialogo.pushButtonImportar.clicked.connect(self.mostrarTablaImportar)
   self.dialogoImportar.tableWidgetImportar.setColumnCount(7)
-  self.dialogoImportar.tableWidgetImportar.setHorizontalHeaderLabels([' ','idpc','Descripcion','Prioridad','Tamaño','TI','TA'])
+  self.dialogoImportar.tableWidgetImportar.setHorizontalHeaderLabels(['idpc','Descripcion','Prioridad','Tamaño','TI','TA'])
   self.dialogcompara.tableWidgetTEspera.setColumnCount(5)
   self.dialogcompara.tableWidgetTEspera.setHorizontalHeaderLabels(['idpc','FCFS','Prioridades','RR','C.Multinivel'])
   self.dialogcompara.tableWidgetTRetorno.setColumnCount(5)
@@ -181,19 +226,22 @@ class Ventana(QMainWindow):
   #DATOS BD
   self.host='localhost'
   self.database='simulador'
-  self.user='root'
-  self.password='letra123'
-     
+  self.user='c1g1'
+  self.password='1234'
+  
   #considero que el calculo de los labels de tam de memoria para procesos y so, se hace recien cuando le 
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
   #muy feo, pero anda jajajaja
 
+ 
+ 
  def loadProceso(self):
    if int(self.dialogoImportar.spinBox_Proceso.value()) >0:
      self.listaImportarProcesos.append(self.dialogoImportar.spinBox_Proceso.value())
      pro_cargados= str(self.dialogoImportar.label_PC.text())+str(self.dialogoImportar.spinBox_Proceso.value())+","
      self.dialogoImportar.label_PC.setText(pro_cargados)
-   
+
+
 
  def inicializarOpcMQ(self):
    self.dialogoMQ.label_algCola1.setEnabled(True)
@@ -221,6 +269,16 @@ class Ventana(QMainWindow):
    if self.comboBox_Algoritmos.currentText()=="COLAS MULTINIVEL":
      self.dialogoMQ.exec_()
      
+
+ def checkflagporcSO(self):
+   if self.flagporcSO and self.spinBoxTamMemoria.value()>0 and self.spinBoxPorcSO.value()>0:
+     self.radioButton_Fijas.setEnabled(True)
+     self.radioButton_Variables.setEnabled(True)
+   else:
+     self.radioButton_Fijas.setEnabled(False)
+     self.radioButton_Variables.setEnabled(False)
+  
+ 
  def actualizarMQ(self):
    if self.dialogoMQ.spinBoxCantColas.value() == 2:
      if not self.dialogoMQ.label_algCola1.isEnabled() :
@@ -397,10 +455,6 @@ class Ventana(QMainWindow):
         print('colalisto',self.colalisto)
         print('colagantt',self.colagantt)
  
-
-
-
-
  def RR(self):
     print('RR')
     print(self.colalisto)
@@ -431,9 +485,22 @@ class Ventana(QMainWindow):
         print('colalisto',self.colalisto)
         print('colagantt',self.colagantt)
         print('q',self.q)
+        
 
 
-
+ def SRTF(self):
+    print('SRTF')
+    if len(self.colalisto)>0:
+        self.colalisto.sort(key=lambda m: (m[4],m[5]))
+        caux=self.colalisto[0].copy()
+        caux[4]=1
+        self.colalisto[0][4]=self.colalisto[0][4]-1
+        if self.colalisto[0][4]==0:
+            del self.colalisto[0]
+        if len(self.colagantt)>0 and self.colagantt[-1][0]==caux[0]:
+            self.colagantt[-1][4]=self.colagantt[-1][4]+1
+        else:
+            self.colagantt.append(caux.copy())
    
  def FCFS(self):
     print('FCFS')
@@ -449,146 +516,88 @@ class Ventana(QMainWindow):
             self.colagantt.append(caux.copy())
         print('mira como voy incrementando mi lista',self.colagantt)
 
+ def limites(self):
+   if self.cant_cola==2:
+     self.limites_colas=[[0,49],[50,99],[999,999],[999,999],[999,999]]
+   if self.cant_cola==3:
+     self.limites_colas=[[0,32],[33,65],[66,99],[999,999],[999,999]]
+   if self.cant_cola==4:
+     self.limites_colas=[[0,24],[25,49],[50,74],[75,99],[999,999]]
+   if self.cant_cola==5:
+     self.limites_colas=[[0,19],[20,39],[40,59],[60,79],[80,99]]
 
- def metodo_fcfs(self):
-   procesos= [[1,'aaa',0,25,20,2],
-   [2,'bbb',0,130,20,1],
-   [3,'ccc',3,65,60,0],
-   [4,'ddd',1,47,7,7],
-   [5,'eee',0,2,5,2]]  
-   if self.MQ == False:
-     self.procesoFCFS = procesos.copy()
-   self.procesoFCFS.sort(key=lambda procesos: procesos[5])
-   self.procesoparaprobar.extend(self.procesoFCFS.copy())
-   print('\n\n\nFCFS\n\n\n',self.procesoparaprobar)
-   #self.procesos_importados = procesos
-   #global cont_sim_2davez
-   #if cont_sim_2davez >1:
-   
+ 
 
- def metodo_rr(self):
-    print('RR')
-    procesos= [[1,'aaa',0,25,20,2],
-    [2,'bbb',0,130,20,1],
-    [3,'ccc',3,65,60,0],
-    [4,'ddd',1,47,7,7],
-    [5,'eee',0,2,5,2]]  
-    if self.MQ == False:
-      self.procesoRR = procesos.copy()
-    global cant_procesos
-    cant_procesos= len(procesos)
-    clock = 0
-    processPerClock = []
-    #quantom = input("plz input quantom: ")
-    quantom = 2
+ def MQ(self):
+   def buscarAlgoritmo(valor,procesos):
+        self.colalisto=procesos
+        print("cola listo",self.colalisto)
+        if valor==0:
+            print("RR")
+            #self.metodo_rr(procesos)
+            #self.procesoRR = procesos
+            #self.metodo_rr()
+            self.RR()
+        if valor ==1:
+            print("FCFS")
+            #self.procesoFCFS = procesos
+            #print("\n\n\n\n",self.procesoFCFS,"\n\n\n\n\n\n")
+            #self.metodo_fcfs()
+            self.FCFS()
+        if valor ==2:
+            print("prio")
+            #self.procesoPRIORIDAD = procesos
+            #self.metodo_prioridades()
+            self.PRIORIDAD()
+            #okey
 
-    self.procesoRR.sort(key = lambda m: (m[5],m[4]))
-    #print(procesos)
-    i = 0
-    while len(self.procesoRR) != 0:
-        #flag = False
-        #for i in range(len(procesos)):
-        ti=self.procesoRR[i][4]
-        b = True
-        q= quantom
-        if ti >= q:
-          ti=ti-q
-          aux=self.procesoRR[i].copy()
-          if ti>0:
-            self.procesoRR[i][4] = ti
-            aux[4]=q
-            i=i+1
-          else:
-            del self.procesoRR[i]
-          q=0
-          processPerClock.append(aux)
+   def EjecutarMQ():
+        if len(self.colas_multinivel[0])>0:
+            print('cola 0',self.colas_multinivel[0])
+            buscarAlgoritmo(self.listAlgoritmoInt[0],self.colas_multinivel[0])
+        elif len(self.colas_multinivel[1])>0:
+            print('cola 1',self.colas_multinivel[1])
+            buscarAlgoritmo(self.listAlgoritmoInt[1],self.colas_multinivel[1])
+        elif len(self.colas_multinivel[2])>0:
+            print('cola 2',self.colas_multinivel[2])
+            buscarAlgoritmo(self.listAlgoritmoInt[2],self.colas_multinivel[2])
+        elif len(self.colas_multinivel[3])>0:
+            print('cola 3',self.colas_multinivel[3])
+            buscarAlgoritmo(self.listAlgoritmoInt[3],self.colas_multinivel[3])
+        elif len(self.colas_multinivel[4])>0:
+            print('cola 4',self.colas_multinivel[4])
+            buscarAlgoritmo(self.listAlgoritmoInt[4],self.colas_multinivel[4])
         else:
-          q=q-ti
-          processPerClock.append(self.procesoRR[i])
-          del self.procesoRR[i]
-        if i==len(self.procesoRR):
-          i=0
-    #print('PROCESO\tTIEMPO')
-    aux=[]
-    contador_muestreo =1
-    """
-    for valor in processPerClock:
-        aux.append([contador_muestreo,valor[0],valor[1]])
-        #print(str(valor[0]) + '\t'+str(contador_muestreo))
-        contador_muestreo = contador_muestreo + 1
-    """
-    #tabla(aux)
-    #procesos_rr = processPerClock
-    #print(procesos_rr)
-    self.procesoparaprobar.extend(processPerClock.copy())
-    print("\n\n\n\n\n\n\nRR ",self.procesoparaprobar)
-
- def metodo_prioridades(self):
-   print("Metodo prioridades")
-   procesos= [[1,'aaa',0,25,20,2],
-   [2,'bbb',0,130,20,1],
-   [3,'ccc',3,65,60,0],
-   [4,'ddd',1,47,7,7],
-   [5,'eee',0,2,5,2]]  
-   if self.MQ == False:
-     self.procesoPRIORIDAD = procesos.copy()
+            pass
    
-   procesos_ta=self.procesoPRIORIDAD
-   procesos_ta.sort(key=lambda procesos_ta: procesos_ta[5])
-   tiempototal_cpu=0
-   #Calculo el tiempo total de irrupción de todos los procesos juntos
-   for i in range(len(self.procesoPRIORIDAD)):
-       tiempototal_cpu=tiempototal_cpu+self.procesoPRIORIDAD[i][4]
-   #Comienzo el algoritmo guardando resultados de cada instante de ejecución
-   resultados=[]
-   clock=0
-   cola_listos=[]
-   ant=1
-   procesoresultado=[]
-   while clock<=tiempototal_cpu:
-     #ejec_en_instante me va guardando filas para agregar al resultado con datos de
-     #la ejecucion de cada proceso en cada instante
-     ejec_en_instante=[]
-     ejec_en_instante.append(clock)
-     #agrego a la cola de listos todos aquellos procesos que llegaron, es decir que 
-     #tienen su ta igual al clock actual
-     for i in range(len(procesos_ta)):
-       if procesos_ta[i][5]==clock:
-         cola_listos.append(procesos_ta[i])
-     #Ordeno la cola de listo por prioridad, asi puedo mandar a ejecutar siempre
-     #al primero de mayor prioridad, recordando que a menor valor de prioridad mayor
-     #es la prioridad, ej prioridad 2 es mayor que 4
-     cola_listos.sort(key=lambda cola_listos: cola_listos[2])
-     #elijo el proceso que va a ejecución
-     #ejecutar=cola_listos[0][1]
-
-     #para ver como se desenlaza el algoritmo y ver como va cambiando la cola de listos 
-     #Voy descontando el tiempo restante de irrupción del proceso que 
-     #mande a ejecutar
-     print(cola_listos)
-     
-     if len(cola_listos) >0:
-       cola_listos[0][4]=cola_listos[0][4]-1
-       """
-       ti_restante=cola_listos[0][4]
-       #Agrego el dato de tiempo restante de irrupción 
-       ejec_en_instante.append(ti_restante)
-       resultados.append(ejec_en_instante)
-       """
-       if len(procesoresultado)>0 and ant==cola_listos[0][0]:
-         procesoresultado[-1][4]=(procesoresultado[-1][4])+1
-       else:
-         procesoresultado.append([cola_listos[0][0],cola_listos[0][1],cola_listos[0][2],cola_listos[0][3],1,cola_listos[0][5]])       
-       #Elimino de la cola de listos aquellos que ya completaron sus tiempos de irrupción
-       ant=cola_listos[0][0]
-       if cola_listos[0][4]==0:
-         cola_listos.remove(cola_listos[0])  
-     clock=clock+1
-         #Agrego la fila completa con todos los datos cargados a los resultados
-         #['idpc','Descripcion','Prioridad','Tamaño','TI','TA']
-         
-   self.procesoparaprobar.extend(procesoresultado.copy()) 
-   print(self.procesoparaprobar)
+   print("MQ")
+   self.listaAlgoritmoInt=[]
+   """
+   for i in self.colanuevo:
+     if i[2] >=self.limites_colas[0][0] and i[2] <=self.limites_colas[0][1] :
+       self.colas_multinivel[0].append(i)
+     if i[2] >=self.limites_colas[1][0] and i[2] <=self.limites_colas[1][1] :
+       self.colas_multinivel[1].append(i)
+     if i[2] >=self.limites_colas[2][0] and i[2] <=self.limites_colas[2][1] :
+       self.colas_multinivel[2].append(i)
+     if i[2] >=self.limites_colas[3][0] and i[2] <=self.limites_colas[3][1] :
+       self.colas_multinivel[3].append(i)
+     if i[2] >=self.limites_colas[4][0] and i[2] <=self.limites_colas[4][1] :
+       self.colas_multinivel[4].append(i)
+     del i"""
+   #--------------------------------------------------SUPER BARRA DE RECORDATORIO---------------------------------------------------------
+   #Esto puede ir un def afuera
+   for i in range(len(self.lista_algoritmos)):
+     if self.lista_algoritmos[i]=='rr':
+       self.listAlgoritmoInt.insert(i,0)
+     if self.lista_algoritmos[i]=='fcfs':
+       self.listAlgoritmoInt.insert(i,1)
+     if self.lista_algoritmos[i]=='prioridades':
+       self.listAlgoritmoInt.insert(i,2)
+     if self.lista_algoritmos[i]=='srtf':
+       self.listAlgoritmoInt.insert(i,3)
+   EjecutarMQ()
+ 
  
  def metodo_mq(self):
    print("Metodo colas multiples")
@@ -719,8 +728,11 @@ class Ventana(QMainWindow):
      self.FCFS()
    if self.comboBox_Algoritmos.currentText() == 'RR':
      self.RR()
-   """if self.comboBox_Algoritmos.currentText() == 'COLAS MULTINIVEL':
-     self.metodo_mq()"""
+   if self.comboBox_Algoritmos.currentText() == 'SRTF':
+     self.SRTF()
+   if self.comboBox_Algoritmos.currentText() =='COLAS MULTINIVEL':
+     self.MQ()
+  
 
  """def ejecutar_algoritmos(self):
    global cont_sim_2davez
@@ -742,64 +754,59 @@ class Ventana(QMainWindow):
     i[2]='disponible'
     i[4]=0
     i[5]=0
-
+  if self.comboBox_Algoritmos.currentText() =='COLAS MULTINIVEL':  
+    self.Mq=True
+  else:
+    self.Mq=False
   self.clock=0
   self.colagantt=[]
   if(self.radioButton_Fijas.isChecked()):
     self.asignacion_fija()
+  if(self.radioButton_Variables.isChecked()):
+    #['idpart',dir_rli,part_size,idpc]
+    self.mem_variable=[[0,0,self.valor_memoria_procesos,0]]
+    self.asignacion_variable()
  
  def arribo(self):
-    self.colanuevo.extend(self.colaarribo.copy())
+   self.colanuevo.extend(self.colaarribo.copy())
 
- def asignacion_fija(self):
-   
-   def asignacionp():
-       #mem
-       self.lista_graficos
-       #Especie de clock
-       cont_tiempo=0
-       i=0
-       while i<len(self.colaarribo):
-           j=0
-           if self.met_asig=='FF':
-               self.lista_graficos.sort(key = lambda m: (m[0]))
-               #print('quiero ver que onda',self.lista_graficos)
-           if self.met_asig=='BF':
-               self.lista_graficos.sort(key=lambda m: m[3])
-           while (j<len(self.lista_graficos)) and ((self.lista_graficos[j][3]<self.colaarribo[i][3]) or (self.lista_graficos[j][2]!='disponible')):
-               j=j+1
-           if j<len(self.lista_graficos): 
-               if (self.lista_graficos[j][3])>=self.colaarribo[i][3] and (self.lista_graficos[j][2])=='disponible':
-                   self.lista_graficos[j][4]=self.colaarribo[i][0] 
-                   self.lista_graficos[j][5]=(self.lista_graficos[j][3])-self.colaarribo[i][3]
-                   self.lista_graficos[j][2]='ocupado'
-                   #sum=sum+1
-                   self.colalisto.append(self.colaarribo[i].copy())
-                   self.colaarribo.pop(i)
-                   self.lista_graficos.sort(key=lambda m: m[0])
-                   print('Tiempo=',cont_tiempo)
-                   #tabla(mem) 
-                   cont_tiempo=cont_tiempo+1
-               else:
-                   i=i+1
-           else:
-               i=i+1  
-   procesos=[[1,'aaa',0,25,20,2],
-   [2,'bbb',0,130,20,1],
-   [3,'ccc',3,65,60,0],
-   [4,'ddd',1,47,7,7],
-   [5,'eee',0,2,5,2],
-   [6,'fff',2,59,3,0],
-   [7,'ggg',2,30,2,8],
-   [8,'hhh',6,200,7,8]]
-   print('ENTER ACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+ def asignacion_variable(self):
+   def asignacion_v():
+     if self.colanuevo:
+        if self.met_asig=='FF':
+            self.mem_variable.sort(key = lambda m: (m[1]))
+        if self.met_asig=='WF':
+            self.mem_variable.sort(key = lambda m: (m[2]),reverse=True)
+        i=0
+        while i<len(self.colanuevo):
+            j=0
+            tipo=self.mem_variable[j][3]
+            while (j<len(self.mem_variable) and (tipo!=0 or self.colanuevo[i][3]>self.mem_variable[j][2])):
+                tipo=self.mem_variable[j][3]
+                j=j+1
+            if j!=0:
+                j=j-1
+            if j<len(self.mem_variable):
+                if tipo==0 and self.colanuevo[i][3]<=self.mem_variable[j][2]:
+                    nuevotam=self.mem_variable[j][2]-self.colanuevo[i][3]
+                    nuevodir=self.mem_variable[j][1]+self.colanuevo[i][3]
+                    if nuevotam==0:
+                        self.mem_variable[j]=[self.idpart,self.mem_variable[j][1],self.colanuevo[i][3],self.colanuevo[i][0]]
+                    else:
+                        self.mem_variable[j]=[self.idpart,self.mem_variable[j][1],self.colanuevo[i][3],self.colanuevo[i][0]]
+                        self.mem_variable.insert(j+1,[0,nuevodir,nuevotam,0])
+                    self.idpart=self.idpart+1
+                    self.colanuevo.pop(i)
+                    j=j+1
+                else:
+                    i=i+1
+
+   self.idpart=1
+   b=True
+   j=0
+   print("variable")
    self.procesos_sin_asignar=self.listaprocesos.copy()
    self.procesos_sin_asignar.sort(key=lambda m: m[5])
-   self.quantom = 2
-   self.q=self.quantom
-   j=0
-   b=True
-   #for i in range(9):
    while b:
      self.colaarribo=[]
      while j<len(self.procesos_sin_asignar) and self.procesos_sin_asignar[j][5]==self.clock:
@@ -808,16 +815,83 @@ class Ventana(QMainWindow):
      if len(self.colaarribo)>0:
        self.arribo()
      print('cola nuevo',self.colanuevo)
-     asignacionp()
-     print('particiones',self.lista_graficos)
-     print('cola arribo',self.colaarribo)
+     asignacion_v()
      self.ejecutar_algoritmos()
-     #self.FCFS()
-     #self.RR()
-     #self.PRIORIDAD()
      self.clock=self.clock+1
-     if len(self.colalisto)==0:
-       b=False
+     #if #completar aca: 
+     #  b=False
+     print('asignacion',self.mem_variable)
+     if self.Mq:
+       if ((len(self.colas_multinivel[0])==0) and (len(self.colas_multinivel[1])==0) and (len(self.colas_multinivel[2])==0) and (len(self.colas_multinivel[3])==0) and (len(self.colas_multinivel[4])==0)):
+        b=False
+     else:
+       if len(self.colalisto)==0:
+        b=False
+
+ def asignacion_fija(self):
+   
+   def asignacion_f():
+       i=0
+       while i<len(self.colanuevo):
+           j=0
+           if self.met_asig=='FF':
+               self.lista_graficos.sort(key = lambda m: (m[0]))
+           if self.met_asig=='BF':
+               self.lista_graficos.sort(key=lambda m: m[3])
+           while (j<len(self.lista_graficos)) and ((self.lista_graficos[j][3]<self.colanuevo[i][3]) or (self.lista_graficos[j][2]!='disponible')):
+               j=j+1
+           if j<len(self.lista_graficos): 
+               if (self.lista_graficos[j][3])>=self.colanuevo[i][3] and (self.lista_graficos[j][2])=='disponible':
+                   self.lista_graficos[j][4]=self.colanuevo[i][0] 
+                   self.lista_graficos[j][5]=(self.lista_graficos[j][3])-self.colanuevo[i][3]
+                   self.lista_graficos[j][2]='ocupado'
+                   if self.Mq:
+                     if self.colanuevo[i][2] >=self.limites_colas[0][0] and self.colanuevo[i][2] <=self.limites_colas[0][1] :
+                       self.colas_multinivel[0].append(self.colanuevo[i].copy())
+                     if self.colanuevo[i][2] >=self.limites_colas[1][0] and self.colanuevo[i][2] <=self.limites_colas[1][1] :
+                       self.colas_multinivel[1].append(self.colanuevo[i].copy())
+                     if self.colanuevo[i][2] >=self.limites_colas[2][0] and self.colanuevo[i][2] <=self.limites_colas[2][1] :
+                       self.colas_multinivel[2].append(self.colanuevo[i].copy())
+                     if self.colanuevo[i][2] >=self.limites_colas[3][0] and self.colanuevo[i][2] <=self.limites_colas[3][1] :
+                       self.colas_multinivel[3].append(self.colanuevo[i].copy())
+                     if self.colanuevo[i][2] >=self.limites_colas[4][0] and self.colanuevo[i][2] <=self.limites_colas[4][1] :
+                       self.colas_multinivel[4].append(self.colanuevo[i].copy())
+                     print('ESTO TIENE QUE APARECER',self.colas_multinivel)
+                   else:
+                     self.colalisto.append(self.colanuevo[i].copy())
+                   self.colanuevo.pop(i)
+                   self.lista_graficos.sort(key=lambda m: m[0]) 
+               else:
+                   i=i+1
+           else:
+               i=i+1  
+   self.procesos_sin_asignar=self.listaprocesos.copy()
+   self.procesos_sin_asignar.sort(key=lambda m: m[5])
+   self.quantom = 2
+   self.q=self.quantom
+   j=0
+   b=True
+   self.limites()
+   while b:
+     self.colaarribo=[]
+     while j<len(self.procesos_sin_asignar) and self.procesos_sin_asignar[j][5]==self.clock:
+       self.colaarribo.append(self.procesos_sin_asignar[j])
+       j=j+1
+     if len(self.colaarribo)>0:
+       self.arribo()
+     asignacion_f()
+     self.ejecutar_algoritmos()
+     self.clock=self.clock+1
+     #Condicion de fin
+     if self.Mq:
+       if ((len(self.colas_multinivel[0])==0) and (len(self.colas_multinivel[1])==0) and (len(self.colas_multinivel[2])==0) and (len(self.colas_multinivel[3])==0) and (len(self.colas_multinivel[4])==0)):
+        b=False
+     else:
+       if len(self.colalisto)==0:
+        b=False
+
+
+  
 
  def mostrarResultSimulacion(self):
    global cont_sim_2davez
@@ -874,25 +948,22 @@ class Ventana(QMainWindow):
      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,3,nueva_tam)
      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,4,nueva_ti)
      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nueva_ta)
-     #rint("item",item)
-     """
+
+
+   """
+   for i in self.result:
+     item= self.dialogoImportar.tableWidgetImportar.item(self.contador_act,0)
+     
      if item.checkState() == Qt.Checked:
        indice=item.row()
-       print("entreeee")
-       print("entre2")
-       print(self.result[indice])
        elemento=self.result[indice]
-       print("elemento",elemento)
        self.procesos_importados.append(elemento)
        print(self.procesos_importados)
-       self.contador_act = self.contador_act +1
-       print("valor del contador",self.contador_act)
+       self.contador_act +=1
    #ahi guarde las filas tildadas en una tabla
    #ahora las agrego a la tabla de gestion de procesos
    print("El contador act vale {}".format(self.contador_act))
    for i in range(self.contador_act):
-    print("aaaaaaaaaaaaa",self.procesos_importados[i][0])
-    print("aaaaaaaaa",self.procesos_importados[i][3])
     nuevo_idpc= QTableWidgetItem(self.procesos_importados[i][0])
     nueva_desc = QTableWidgetItem(self.procesos_importados[i][1])
     nueva_prio = QTableWidgetItem(self.procesos_importados[i][2])
@@ -909,6 +980,7 @@ class Ventana(QMainWindow):
     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nuevo_ta)
     print("Nuevo proceso actualizado en tabla")
     """
+
  def generar_grafico_durante_simulacion(self):
    print('entre al grafico')
    global cont_sim_2davez
@@ -958,51 +1030,48 @@ class Ventana(QMainWindow):
     plt.show()
 
  def cargarTabla(self):
-   if self.flagVerprocesos ==False:
-     
-    self.flagVerprocesos = True
-    print("entre")
-    try:
-      connection = mysql.connector.connect(host=self.host,
-      database = self.database,
-      user=self.user,
-      password=self.password)
-      print("conecto")
-      cur=connection.cursor()
-      cur.execute("SELECT * FROM procesos")
-      self.result=cur.fetchall()
-      contador_rows_importar =0
-      for i in self.result:
-        
-      
-        idpc= QTableWidgetItem(str(i[0]))
-        desc =QTableWidgetItem(str(i[1]))
-        prioridad = QTableWidgetItem(str(i[2]))
-        tam= QTableWidgetItem(str(i[3]))
-        ti= QTableWidgetItem(str(i[4]))
-        ta= QTableWidgetItem(str(i[5]))
-
-        self.dialogoImportar.tableWidgetImportar.insertRow(contador_rows_importar)
-        
-        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,0,idpc)
-        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,1,desc)
-        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,2,prioridad)
-        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,3,tam)
-        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,4,ti)
-        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,5,ta)
-        
+   print("entre")
+   try:
+     connection = mysql.connector.connect(host=self.host,
+     database = self.database,
+     user=self.user,
+     password=self.password)
+     print("conecto")
+     cur=connection.cursor()
+     cur.execute("SELECT * FROM procesos")
+     self.result=cur.fetchall()
+     contador_rows_importar =0
+     for i in self.result:
+       
+       self.checkbox=QTableWidgetItem()
+       self.checkbox.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+       self.checkbox.setCheckState(Qt.Unchecked)
+       idpc= QTableWidgetItem(str(i[0]))
+       desc =QTableWidgetItem(str(i[1]))
+       prioridad = QTableWidgetItem(str(i[2]))
+       tam= QTableWidgetItem(str(i[3]))
+       ti= QTableWidgetItem(str(i[4]))
+       ta= QTableWidgetItem(str(i[5]))
+       self.dialogoImportar.tableWidgetImportar.insertRow(contador_rows_importar)
+       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,0,idpc)
+       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,1,desc)
+       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,2,prioridad)
+       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,3,tam)
+       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,4,ti)
+       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,5,ta)
+       
 
 
 
-        contador_rows_importar = contador_rows_importar + 1
-    except mysql.connector.Error as error:
-      print("Fallo al conectarse {}",format(error))
-    else:
-      pass
-    finally:
-      if(connection.is_connected()):
-        connection.close()
-        print("Conexion cerrada")
+       contador_rows_importar = contador_rows_importar + 1
+   except mysql.connector.Error as error:
+     print("Fallo al conectarse {}",format(error))
+   else:
+     pass
+   finally:
+     if(connection.is_connected()):
+      connection.close()
+      print("Conexion cerrada")
 
  def mostrarTablaImportar(self):
    self.dialogoImportar.exec_()
@@ -1049,7 +1118,12 @@ class Ventana(QMainWindow):
 
  def graficar(self):
    self.carga_particionFijas.hide()
+   self.flagParticionesCargadas=True
+   self.habilitarGestionarProcesos()
    self.generar_grafico()
+
+ def habilitarGestionarProcesos(self):
+   self.boton_GestProcesos.setEnabled(True)
  
  def generar_grafico(self):
    global conts
@@ -1191,38 +1265,63 @@ class Ventana(QMainWindow):
 
  def variableselected(self):
    self.radioButton_Worst.setEnabled(True)
+   if self.radioButton_Best.isChecked():
+     self.radioButton_Best.setChecked(False)
    self.radioButton_Best.setEnabled(False)
+   if not self.radioButton_First.isEnabled():
+     self.radioButton_First.setEnabled(True)
    #nota: el set enable anda con los line Edit
  
  def fijaselected(self):
    #hace un disable del radio button de worst fit
+   print(self.radioButton_Worst.isChecked())
+   if self.radioButton_Worst.isChecked():
+    self.radioButton_Worst.setChecked(False)
    self.radioButton_Worst.setEnabled(False)
    self.radioButton_Best.setEnabled(True)
+   self.radioButton_First.setEnabled(True)
 
  def firstselected(self):
    self.met_asig='FF'
+   if not self.AceptarMem.isEnabled():
+     self.AceptarMem.setEnabled(True)
  
  def bestselected(self):
    self.met_asig='BF'
+   if not self.AceptarMem.isEnabled():
+     self.AceptarMem.setEnabled(True)
 
  def worstselected(self):
    self.met_asig='WF'
+   if not self.AceptarMem.isEnabled():
+     self.AceptarMem.setEnabled(True)
+
 
 
  def updateLabels(self):
    if self.por_so >0:
     self.valor_so = ((self.tam_Memoria)*(self.por_so))/100
     self.valor_memoria_procesos = self.tam_Memoria-self.valor_so
-    self.label_MemProcesos.setText(''+str(round(self.valor_memoria_procesos,2)) + " KB")
+    self.valor_memoria_procesos = round(self.valor_memoria_procesos,2)
+    self.label_MemProcesos.setText(''+str(self.valor_memoria_procesos) + " KB")
     self.label_MemSO.setText(''+str(self.valor_so) + " KB") 
 
  def actTamMemoria(self):
-   self.tam_Memoria = self.spinBoxTamMemoria.value()
-   print(self.tam_Memoria)
+   if self.spinBoxTamMemoria.value()>0:
+    self.tam_Memoria = self.spinBoxTamMemoria.value()
+    print(self.tam_Memoria)
+    self.spinBoxPorcSO.setEnabled(True)
 
  def actPorcSO(self):
    self.por_so=self.spinBoxPorcSO.value()
    print(self.por_so)
+   self.flagporcSO=True
+
+ def habilitarAlgYQuantum(self):
+   self.comboBox_Algoritmos.setEnabled(True)
+   self.label_Algoritmo.setEnabled(True)
+   self.spinBox_Quantum.setEnabled(True)
+   self.label_Quantum.setEnabled(True)
 
  def cargarProcesosYRafagasenBD(self):
    def limpiar_carga_rafagas():
@@ -1234,6 +1333,8 @@ class Ventana(QMainWindow):
      self.dialogo.spinBoxPriori.setValue(0)
      self.dialogo.spinBoxTamProc.setValue(0)
      self.dialogo.spinBoxTiempoarr.setValue(0)
+     self.flagProcesosCargados=True
+     self.habilitarAlgYQuantum()
    
    
    try:
@@ -1322,8 +1423,8 @@ class Ventana(QMainWindow):
    self.dialogo.exec_()
    self.dialogo.lineEditDescrip.setText('')
    #self.dialogo.spinBoxTiempoarr.setText('')
-   self.dialogo.spinBoxTamProc.setText('')
-   self.dialogo.spinBoxPriori.setText('')
+   self.dialogo.spinBoxTamProc.setValue(0)
+   self.dialogo.spinBoxPriori.setValue(0)
    while (self.dialogo.tableWidgetRafaga.rowCount()>0):
     self.dialogo.tableWidgetRafaga.removeRow(0)
   
@@ -1354,8 +1455,8 @@ class Ventana(QMainWindow):
     for x in procesos_gantt:
       res= 'Proceso '+str(x[0])
       df.append(dict(Task="CPU", Start=x[2]-x[1], Finish = x[2],Resource=res))
-    df.append(dict(Task="ES",Start=3,Finish =7, Resource="Proceso 1"))
-    print("LISTA DE GANTT",procesos_gantt)
+    #df.append(dict(Task="ES",Start=3,Finish =7, Resource="Proceso 1"))
+
     #igual no puedo ver la interfaz xd  
     # ves cmd?
     #nop, banca ahi si  
