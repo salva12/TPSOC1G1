@@ -103,49 +103,22 @@ class Ventana(QMainWindow):
   
   self.clock=0
   
-  #ACA DESABILITO TODOS LOS CAMPOS DEL MAIN, Y LOS VOY HABILITANDO A MEDIDA QUE SE CUMPLEN LOS PASOS
-  self.spinBoxPorcSO.setEnabled(False)
-  self.radioButton_Fijas.setEnabled(False)
-  self.radioButton_Variables.setEnabled(False)
-  self.radioButton_First.setEnabled(False)
-  self.radioButton_Best.setEnabled(False)
-  self.radioButton_Worst.setEnabled(False)
-  self.AceptarMem.setEnabled(False)
-  self.boton_GestProcesos.setEnabled(False)
-  self.comboBox_Algoritmos.setEnabled(False)
-  self.label_Algoritmo.setEnabled(False)
-  self.spinBox_Quantum.setEnabled(False)
-  self.label_Quantum.setEnabled(False)
-  self.pushButton_AceptarProc.setEnabled(False)
-  self.pushButtonComparar.setEnabled(False)
-  self.pushButton_Simular.setEnabled(False)
-
-
-
-  #ZONA DE FLAGS DE CONTROL DE INTERFAZ
-  self.flagporcSO=False
-  self.flagParticionesCargadas= False
-  self.flagProcesosCargados = False
-
-
-
-
   self.MQ = False
   self.q=0
   self.quantom=0
   self.listaprocesos= []
+  self.listaImportarProcesos = []
   self.label_MemProcesos.setText('0 KB')
   self.label_MemSO.setText('0 KB')
   self.spinBoxTamMemoria.setMaximum(1000000)
   self.spinBoxTamMemoria.setSingleStep(2**2)
   self.spinBoxPorcSO.setMaximum(90)
   self.spinBoxPorcSO.setSingleStep(5)
+  self.flagVerprocesos = False
   self.spinBoxTamMemoria.valueChanged.connect(self.actTamMemoria)
   #self.spinBoxTamMemoria.valueChanged.connect(self.updateLabels)
   self.spinBoxPorcSO.valueChanged.connect(self.actPorcSO)
-  self.spinBoxPorcSO.valueChanged.connect(self.checkflagporcSO)
   self.spinBoxPorcSO.valueChanged.connect(self.updateLabels)
-  self.spinBox_Quantum.valueChanged.connect(self.checkQuantum)
   self.spinBoxTamMemoria.valueChanged.connect(self.updateLabels)
   self.radioButton_Fijas.toggled.connect(self.fijaselected)
   self.radioButton_Variables.toggled.connect(self.variableselected)
@@ -161,6 +134,7 @@ class Ventana(QMainWindow):
   self.carga_particionFijas.tableWidgetCargaParticion.setColumnCount(4)
   self.carga_particionFijas.tableWidgetCargaParticion.setHorizontalHeaderLabels(['idSim','idPart','dirRli','partSize'])
   self.carga_particionFijas.pushButtonAgregarParticion.clicked.connect(self.agregar_fila_particiones)
+  self.dialogoImportar.pushButtonCargar.clicked.connect(self.loadProceso)
   
 
   self.pushButton_Simular.clicked.connect(self.asignacion_memoria)
@@ -214,18 +188,12 @@ class Ventana(QMainWindow):
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
   #muy feo, pero anda jajajaja
 
- def checkQuantum(self):
-   if self.spinBox_Quantum.value()>0:
-     self.pushButton_AceptarProc.setEnabled(True)
-
- def checkflagporcSO(self):
-   if self.flagporcSO and self.spinBoxTamMemoria.value()>0 and self.spinBoxPorcSO.value()>0:
-     self.radioButton_Fijas.setEnabled(True)
-     self.radioButton_Variables.setEnabled(True)
-   else:
-     self.radioButton_Fijas.setEnabled(False)
-     self.radioButton_Variables.setEnabled(False)
-     
+ def loadProceso(self):
+   if int(self.dialogoImportar.spinBox_Proceso.value()) >0:
+     self.listaImportarProcesos.append(self.dialogoImportar.spinBox_Proceso.value())
+     pro_cargados= str(self.dialogoImportar.label_PC.text())+str(self.dialogoImportar.spinBox_Proceso.value())+","
+     self.dialogoImportar.label_PC.setText(pro_cargados)
+   
 
  def inicializarOpcMQ(self):
    self.dialogoMQ.label_algCola1.setEnabled(True)
@@ -744,8 +712,17 @@ class Ventana(QMainWindow):
 
 
 
-     
  def ejecutar_algoritmos(self):
+   if self.comboBox_Algoritmos.currentText() == 'PRIORIDADES':
+     self.PRIORIDAD()
+   if self.comboBox_Algoritmos.currentText() == 'FCFS':
+     self.FCFS()
+   if self.comboBox_Algoritmos.currentText() == 'RR':
+     self.RR()
+   """if self.comboBox_Algoritmos.currentText() == 'COLAS MULTINIVEL':
+     self.metodo_mq()"""
+
+ """def ejecutar_algoritmos(self):
    global cont_sim_2davez
    
    print('que problema tenes?')
@@ -758,9 +735,16 @@ class Ventana(QMainWindow):
    if self.comboBox_Algoritmos.currentText() == 'RR':
      self.metodo_rr()
    if self.comboBox_Algoritmos.currentText() == 'COLAS MULTINIVEL':
-     self.metodo_mq()
+     self.metodo_mq()"""
 
  def asignacion_memoria(self):
+  for i in self.lista_graficos:
+    i[2]='disponible'
+    i[4]=0
+    i[5]=0
+
+  self.clock=0
+  self.colagantt=[]
   if(self.radioButton_Fijas.isChecked()):
     self.asignacion_fija()
  
@@ -827,9 +811,10 @@ class Ventana(QMainWindow):
      asignacionp()
      print('particiones',self.lista_graficos)
      print('cola arribo',self.colaarribo)
+     self.ejecutar_algoritmos()
      #self.FCFS()
      #self.RR()
-     self.PRIORIDAD()
+     #self.PRIORIDAD()
      self.clock=self.clock+1
      if len(self.colalisto)==0:
        b=False
@@ -868,19 +853,46 @@ class Ventana(QMainWindow):
 
 
  def update_tablaProcesos(self):
-   for i in self.result:
-     item= self.dialogoImportar.tableWidgetImportar.item(self.contador_act,0)
-     
+   def cambio_estado():
+     print("cambie de estado")
+   print(self.listaImportarProcesos)
+   for i in self.listaImportarProcesos:
+     print(self.result[i-1])
+     #hago un item de tabla, al item de otra tabla
+     nueva_idpc= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,0))
+     nueva_desc= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,1))
+     nueva_prio= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,2))
+     nueva_tam= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,3))
+     nueva_ti= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,4))
+     nueva_ta= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,5))
+     ultima_fila_tabla_procesos= self.dialogo.tableWidgetProcesos.rowCount()
+     print("ultima fila",ultima_fila_tabla_procesos)
+     self.dialogo.tableWidgetProcesos.insertRow(ultima_fila_tabla_procesos)
+     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,0,nueva_idpc)
+     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,1,nueva_desc)
+     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,2,nueva_prio)
+     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,3,nueva_tam)
+     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,4,nueva_ti)
+     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nueva_ta)
+     #rint("item",item)
+     """
      if item.checkState() == Qt.Checked:
        indice=item.row()
+       print("entreeee")
+       print("entre2")
+       print(self.result[indice])
        elemento=self.result[indice]
+       print("elemento",elemento)
        self.procesos_importados.append(elemento)
        print(self.procesos_importados)
-       self.contador_act +=1
+       self.contador_act = self.contador_act +1
+       print("valor del contador",self.contador_act)
    #ahi guarde las filas tildadas en una tabla
    #ahora las agrego a la tabla de gestion de procesos
    print("El contador act vale {}".format(self.contador_act))
    for i in range(self.contador_act):
+    print("aaaaaaaaaaaaa",self.procesos_importados[i][0])
+    print("aaaaaaaaa",self.procesos_importados[i][3])
     nuevo_idpc= QTableWidgetItem(self.procesos_importados[i][0])
     nueva_desc = QTableWidgetItem(self.procesos_importados[i][1])
     nueva_prio = QTableWidgetItem(self.procesos_importados[i][2])
@@ -896,7 +908,7 @@ class Ventana(QMainWindow):
     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,4,nuevo_ti)
     self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nuevo_ta)
     print("Nuevo proceso actualizado en tabla")
-
+    """
  def generar_grafico_durante_simulacion(self):
    print('entre al grafico')
    global cont_sim_2davez
@@ -946,49 +958,51 @@ class Ventana(QMainWindow):
     plt.show()
 
  def cargarTabla(self):
-   print("entre")
-   try:
-     connection = mysql.connector.connect(host=self.host,
-     database = self.database,
-     user=self.user,
-     password=self.password)
-     print("conecto")
-     cur=connection.cursor()
-     cur.execute("SELECT * FROM procesos")
-     self.result=cur.fetchall()
-     contador_rows_importar =0
-     for i in self.result:
-       
-       self.checkbox=QTableWidgetItem()
-       self.checkbox.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-       self.checkbox.setCheckState(Qt.Unchecked)
-       idpc= QTableWidgetItem(str(i[0]))
-       desc =QTableWidgetItem(str(i[1]))
-       prioridad = QTableWidgetItem(str(i[2]))
-       tam= QTableWidgetItem(str(i[3]))
-       ti= QTableWidgetItem(str(i[4]))
-       ta= QTableWidgetItem(str(i[5]))
-       self.dialogoImportar.tableWidgetImportar.insertRow(contador_rows_importar)
-       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,0,self.checkbox)
-       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,1,idpc)
-       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,2,desc)
-       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,3,prioridad)
-       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,4,tam)
-       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,5,ti)
-       self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,6,ta)
-       
+   if self.flagVerprocesos ==False:
+     
+    self.flagVerprocesos = True
+    print("entre")
+    try:
+      connection = mysql.connector.connect(host=self.host,
+      database = self.database,
+      user=self.user,
+      password=self.password)
+      print("conecto")
+      cur=connection.cursor()
+      cur.execute("SELECT * FROM procesos")
+      self.result=cur.fetchall()
+      contador_rows_importar =0
+      for i in self.result:
+        
+      
+        idpc= QTableWidgetItem(str(i[0]))
+        desc =QTableWidgetItem(str(i[1]))
+        prioridad = QTableWidgetItem(str(i[2]))
+        tam= QTableWidgetItem(str(i[3]))
+        ti= QTableWidgetItem(str(i[4]))
+        ta= QTableWidgetItem(str(i[5]))
+
+        self.dialogoImportar.tableWidgetImportar.insertRow(contador_rows_importar)
+        
+        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,0,idpc)
+        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,1,desc)
+        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,2,prioridad)
+        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,3,tam)
+        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,4,ti)
+        self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,5,ta)
+        
 
 
 
-       contador_rows_importar = contador_rows_importar + 1
-   except mysql.connector.Error as error:
-     print("Fallo al conectarse {}",format(error))
-   else:
-     pass
-   finally:
-     if(connection.is_connected()):
-      connection.close()
-      print("Conexion cerrada")
+        contador_rows_importar = contador_rows_importar + 1
+    except mysql.connector.Error as error:
+      print("Fallo al conectarse {}",format(error))
+    else:
+      pass
+    finally:
+      if(connection.is_connected()):
+        connection.close()
+        print("Conexion cerrada")
 
  def mostrarTablaImportar(self):
    self.dialogoImportar.exec_()
@@ -1035,13 +1049,8 @@ class Ventana(QMainWindow):
 
  def graficar(self):
    self.carga_particionFijas.hide()
-   self.flagParticionesCargadas=True
-   self.habilitarGestionarProcesos()
    self.generar_grafico()
  
- def habilitarGestionarProcesos(self):
-   self.boton_GestProcesos.setEnabled(True)
-
  def generar_grafico(self):
    global conts
    fig= plt.figure('Particiones',figsize=(9.2, 5))
@@ -1182,37 +1191,22 @@ class Ventana(QMainWindow):
 
  def variableselected(self):
    self.radioButton_Worst.setEnabled(True)
-   if self.radioButton_Best.isChecked():
-     self.radioButton_Best.setChecked(False)
    self.radioButton_Best.setEnabled(False)
-   if not self.radioButton_First.isEnabled():
-     self.radioButton_First.setEnabled(True)
    #nota: el set enable anda con los line Edit
  
  def fijaselected(self):
    #hace un disable del radio button de worst fit
-   print(self.radioButton_Worst.isChecked())
-   if self.radioButton_Worst.isChecked():
-    self.radioButton_Worst.setChecked(False)
    self.radioButton_Worst.setEnabled(False)
    self.radioButton_Best.setEnabled(True)
-   self.radioButton_First.setEnabled(True)
-   
 
  def firstselected(self):
    self.met_asig='FF'
-   if not self.AceptarMem.isEnabled():
-     self.AceptarMem.setEnabled(True)
  
  def bestselected(self):
    self.met_asig='BF'
-   if not self.AceptarMem.isEnabled():
-     self.AceptarMem.setEnabled(True)
 
  def worstselected(self):
    self.met_asig='WF'
-   if not self.AceptarMem.isEnabled():
-     self.AceptarMem.setEnabled(True)
 
 
  def updateLabels(self):
@@ -1223,22 +1217,12 @@ class Ventana(QMainWindow):
     self.label_MemSO.setText(''+str(self.valor_so) + " KB") 
 
  def actTamMemoria(self):
-   if self.spinBoxTamMemoria.value()>0:
-    self.tam_Memoria = self.spinBoxTamMemoria.value()
-    print(self.tam_Memoria)
-    self.spinBoxPorcSO.setEnabled(True)
+   self.tam_Memoria = self.spinBoxTamMemoria.value()
+   print(self.tam_Memoria)
 
  def actPorcSO(self):
    self.por_so=self.spinBoxPorcSO.value()
    print(self.por_so)
-   self.flagporcSO=True
-
-
- def habilitarAlgYQuantum(self):
-   self.comboBox_Algoritmos.setEnabled(True)
-   self.label_Algoritmo.setEnabled(True)
-   self.spinBox_Quantum.setEnabled(True)
-   self.label_Quantum.setEnabled(True)
 
  def cargarProcesosYRafagasenBD(self):
    def limpiar_carga_rafagas():
@@ -1250,8 +1234,6 @@ class Ventana(QMainWindow):
      self.dialogo.spinBoxPriori.setValue(0)
      self.dialogo.spinBoxTamProc.setValue(0)
      self.dialogo.spinBoxTiempoarr.setValue(0)
-     self.flagProcesosCargados=True
-     self.habilitarAlgYQuantum()
    
    
    try:
@@ -1340,8 +1322,8 @@ class Ventana(QMainWindow):
    self.dialogo.exec_()
    self.dialogo.lineEditDescrip.setText('')
    #self.dialogo.spinBoxTiempoarr.setText('')
-   self.dialogo.spinBoxTamProc.setValue(0)
-   self.dialogo.spinBoxPriori.setValue(0)
+   self.dialogo.spinBoxTamProc.setText('')
+   self.dialogo.spinBoxPriori.setText('')
    while (self.dialogo.tableWidgetRafaga.rowCount()>0):
     self.dialogo.tableWidgetRafaga.removeRow(0)
   
@@ -1373,7 +1355,7 @@ class Ventana(QMainWindow):
       res= 'Proceso '+str(x[0])
       df.append(dict(Task="CPU", Start=x[2]-x[1], Finish = x[2],Resource=res))
     df.append(dict(Task="ES",Start=3,Finish =7, Resource="Proceso 1"))
-
+    print("LISTA DE GANTT",procesos_gantt)
     #igual no puedo ver la interfaz xd  
     # ves cmd?
     #nop, banca ahi si  
