@@ -290,17 +290,22 @@
     </property>
     <item>
      <property name="text">
+      <string>RR</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>SRTF</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
       <string>FCFS</string>
      </property>
     </item>
     <item>
      <property name="text">
       <string>Prioridades</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>RR</string>
      </property>
     </item>
    </widget>
@@ -318,17 +323,22 @@
     </property>
     <item>
      <property name="text">
+      <string>RR</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
       <string>FCFS</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>Prioridades</string>
+      <string>SRTF</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>RR</string>
+      <string>Prioridades</string>
      </property>
     </item>
    </widget>
@@ -346,17 +356,22 @@
     </property>
     <item>
      <property name="text">
+      <string>RR</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>SRTF</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
       <string>FCFS</string>
      </property>
     </item>
     <item>
      <property name="text">
       <string>Prioridades</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>RR</string>
      </property>
     </item>
    </widget>
@@ -374,17 +389,22 @@
     </property>
     <item>
      <property name="text">
+      <string>RR</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
       <string>FCFS</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>Prioridades</string>
+      <string>SRTF</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>RR</string>
+      <string>Prioridades</string>
      </property>
     </item>
    </widget>
@@ -402,17 +422,22 @@
     </property>
     <item>
      <property name="text">
+      <string>RR</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
       <string>FCFS</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>Prioridades</string>
+      <string>SRTF</string>
      </property>
     </item>
     <item>
      <property name="text">
-      <string>RR</string>
+      <string>Prioridades</string>
      </property>
     </item>
    </widget>
