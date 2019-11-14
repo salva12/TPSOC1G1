@@ -270,8 +270,7 @@ class Ventana(QMainWindow):
   
   #considero que el calculo de los labels de tam de memoria para procesos y so, se hace recien cuando le 
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
-  #muy feo, pero anda jajajaja
-
+ 
  def checkcampoq(self):
    if not self.comboBox_Algoritmos.currentText()=='RR':
      if self.spinBox_Quantum.isEnabled():
@@ -608,18 +607,15 @@ class Ventana(QMainWindow):
         caux=self.colalisto[0].copy()
         caux[4]=1
         self.colalisto[0][4]=self.colalisto[0][4]-1
+
         rafita=self.rafagas[str(self.colalisto[0][0])]
         print('ESTE ES RAFITA ANTES DE DECREMENTAR',rafita)
         rafita[0][3]=rafita[0][3]-1
         print("ESTE ES RAFITA DESPUES DE DECREMENTAR",rafita)
         self.rafagas.update({str(self.colalisto[0][0]):rafita})
         print("RAFAGA",self.rafagas)
-        """if rafita[0][3]==0:
-          if len(rafita)>1:
-            self.colabloqueado.append(self.colalisto[0].copy())
-          del rafita[0]
-          self.rafagas.update({str(self.colalisto[0][0]):rafita})
-          del self.colalisto[0]"""
+        
+
         if len(self.colagantt)>0 and self.colagantt[-1][0]==caux[0]:
             self.colagantt[-1][4]=self.colagantt[-1][4]+1
         else:
@@ -627,19 +623,41 @@ class Ventana(QMainWindow):
         self.q=self.q-1
         if self.q==0:
             self.q=self.quantom
+
+            if rafita[0][3]==0:
+              #Termina quantum y justo termina la rafaga
+              if len(rafita)>1:
+                #termina quantum y se bloquea el proceso (Lo manda al cola del bloqueado)
+                self.colabloqueado.append(self.colalisto[0].copy())
+              del rafita[0]
+              self.rafagas.update({str(self.colalisto[0][0]):rafita})
+              del self.colalisto[0]
+            """
             if self.colalisto[0][4]==0:
                 #Termina quantum y justo termina el proceso
                 del self.colalisto[0]
+               
             else:
                 #termina quantum y se bloquea el proceso (Lo manda al final de la cola)
                 aux=self.colalisto[0].copy()
                 del self.colalisto[0]
-                self.colalisto.append(aux.copy())
+                self.colalisto.append(aux.copy())"""
         else:
+            #No termina quantum y justo termina la rafaga
+            if rafita[0][3]==0:
+              #Termina la rafaga
+              if len(rafita)>1:
+                #termina la rafaga pero no el proceso: se bloquea el proceso (Lo manda al cola del bloqueado)
+                self.colabloqueado.append(self.colalisto[0].copy())
+              del rafita[0]
+              self.rafagas.update({str(self.colalisto[0][0]):rafita})
+              del self.colalisto[0]
+              self.q=self.quantom
+            """              
             if self.colalisto[0][4]==0:
-                #No termina quantum y justo termina el proceso
-                del self.colalisto[0]
-                self.q=self.quantom
+              #No termina quantum y justo termina el proceso
+              del self.colalisto[0]"""
+              
         print('colalisto',self.colalisto)
         print('colagantt',self.colagantt)
         print('q',self.q)
@@ -1643,6 +1661,9 @@ class Ventana(QMainWindow):
    #self.dialogo.spinBoxTiempoarr.setText('')
    self.dialogo.spinBoxTamProc.setValue(0)
    self.dialogo.spinBoxPriori.setValue(0)
+   if self.dialogo.radioButtonES.isEnabled():
+     self.dialogo.radioButtonES.setEnabled(False)
+     self.dialogo.radioButtonCPU.setEnabled(True)
    while (self.dialogo.tableWidgetRafaga.rowCount()>0):
     self.dialogo.tableWidgetRafaga.removeRow(0)
   
