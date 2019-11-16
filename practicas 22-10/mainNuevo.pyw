@@ -20,7 +20,7 @@ matplotlib.use('Qt4Agg')
 import mysql.connector
 from mysql.connector import Error
 from mysql.connector import errorcode
-
+#update 15/11
 
 class Dialogo(QDialog):
   def __init__(self):
@@ -265,8 +265,8 @@ class Ventana(QMainWindow):
   #DATOS BD
   self.host='localhost'
   self.database='simulador'
-  self.user='c1g1'
-  self.password='1234'
+  self.user='root'
+  self.password='letra123'
   
   #considero que el calculo de los labels de tam de memoria para procesos y so, se hace recien cuando le 
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
@@ -602,6 +602,7 @@ class Ventana(QMainWindow):
  
  def RR(self):
     print('RR')
+    print(self.quantom)
     print(self.colalisto)
     if len(self.colalisto)>0:
         caux=self.colalisto[0].copy()
@@ -632,16 +633,11 @@ class Ventana(QMainWindow):
               del rafita[0]
               self.rafagas.update({str(self.colalisto[0][0]):rafita})
               del self.colalisto[0]
-            """
-            if self.colalisto[0][4]==0:
-                #Termina quantum y justo termina el proceso
-                del self.colalisto[0]
-               
             else:
-                #termina quantum y se bloquea el proceso (Lo manda al final de la cola)
+                #termina quantum y no termina la rafaga, manda el proceso al final de la colalisto
                 aux=self.colalisto[0].copy()
                 del self.colalisto[0]
-                self.colalisto.append(aux.copy())"""
+                self.colalisto.append(aux.copy())
         else:
             #No termina quantum y justo termina la rafaga
             if rafita[0][3]==0:
@@ -1683,6 +1679,7 @@ class Ventana(QMainWindow):
 
     ##==========================PARA FCFS========================
     procesos_gantt = []
+    procesos_esgantt=[]
     sumati =0
     print('MIRA ACA',self.colagantt)
     for x in self.colagantt:
@@ -1694,6 +1691,20 @@ class Ventana(QMainWindow):
     for x in procesos_gantt:
       res= 'Proceso '+str(x[0])
       df.append(dict(Task="CPU", Start=x[2]-x[1], Finish = x[2],Resource=res))
+    sumati = 0
+    for y in self.colaesgantt:
+      print('y',y)
+
+      sumati = sumati + y[4]
+      print('sumati',sumati)
+      procesos_esgantt.append([y[0],y[4],sumati])
+  
+    
+    for y in procesos_esgantt:
+      res= 'Proceso '+str(y[0])
+      df.append(dict(Task="ES", Start=y[2]-y[1], Finish = y[2],Resource=res))
+
+    
     #df.append(dict(Task="ES",Start=3,Finish =7, Resource="Proceso 1"))
 
     #igual no puedo ver la interfaz xd  
@@ -1702,47 +1713,7 @@ class Ventana(QMainWindow):
     #sigue siendo error de otro lado
     ##======================================================================
     
-    """
-    ##===========================PARA RR==============================
-    procesos_gantt = []
-    lista_procesos= []
-    for i in range(cant_procesos):
-      lista_procesos.append([])
-    sumata=0
-    for x in procesos_rr:
-      lista_procesos[x[1]-1].append([x[0]-1,x[0]])
-      #procesos_gantt.append([x[1],x[0]-1,x[0]])
-    #df = []
-
-
-
-    print('\n\nTIEMPOS DEL PROCESO 1\n\n',lista_procesos[0])
-    print('\n\nTIEMPOS DEL PROCESO 2\n\n',lista_procesos[1])
-    print('\n\nTIEMPOS DEL PROCESO 3\n\n',lista_procesos[2])
-    print('\n\nTIEMPOS DEL PROCESO 4\n\n',lista_procesos[3])
-    print('\n\nTIEMPOS DEL PROCESO 5\n\n',lista_procesos[4])
-
-    df = []
-    nro_proceso = 1
-    for z in lista_procesos:
-      res = "Proceso "+str(nro_proceso)
-      for x in z:
-        df.append(dict(Task = "CPU", Start = x[0], Finish = x[1], Resource= res))
-      nro_proceso = nro_proceso +1
-    """
-    # ==============================================================================
-    """
-    
-    
-    df = [dict(Task="CPU", Start='0', Finish=procesos_gantt[0][2],Resource='Proceso1'),
-    dict(Task="CPU", Start=procesos_gantt[0][2], Finish=procesos_gantt[1][2],Resource='Proceso2'),
-    #dict(Task='CPU',Start='3',Finish='6',Resource='Proceso3'),
-    dict(Task="CPU", Start=procesos_gantt[1][2], Finish=procesos_gantt[2][2],Resource='Proceso3'),
-    dict(Task="CPU", Start=procesos_gantt[2][2], Finish=procesos_gantt[3][2],Resource='Proceso4'),
-    #dict(Task="ES", Start='6', Finish='9',Resource='Proceso3'),
-    dict(Task="CPU", Start=procesos_gantt[3][2], Finish=procesos_gantt[4][2],Resource='Proceso5'),
-    dict(Task="CPU", Start=procesos_gantt[4][2], Finish=procesos_gantt[5][2],Resource='Proceso6'),]
-    """
+   
 
     fig = ff.create_gantt(df,index_col='Resource',show_colorbar=True,group_tasks=True,width=1200,height=400)
     #estas dos lineas son para que pueda poner numeros en lugar de fechas
