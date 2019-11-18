@@ -209,8 +209,8 @@ color:white;
      <widget class="QLineEdit" name="lineEdit_Tiempo">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>30</y>
+        <x>190</x>
+        <y>0</y>
         <width>51</width>
         <height>21</height>
        </rect>
@@ -278,6 +278,19 @@ color:white;
       </property>
       <property name="text">
        <string>ES</string>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="spinBoxTiempo">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>30</y>
+        <width>53</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color:white;</string>
       </property>
      </widget>
     </widget>
