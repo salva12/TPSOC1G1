@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>744</width>
+    <width>654</width>
     <height>369</height>
    </rect>
   </property>
@@ -23,7 +23,7 @@ background-color:#6d7993;
     <rect>
      <x>10</x>
      <y>40</y>
-     <width>721</width>
+     <width>631</width>
      <height>171</height>
     </rect>
    </property>
@@ -42,13 +42,16 @@ background-color:#6d7993;
    <property name="columnCount">
     <number>0</number>
    </property>
+   <attribute name="verticalHeaderStretchLastSection">
+    <bool>true</bool>
+   </attribute>
   </widget>
   <widget class="QPushButton" name="pushButtonVertabla">
    <property name="geometry">
     <rect>
-     <x>380</x>
+     <x>350</x>
      <y>310</y>
-     <width>351</width>
+     <width>290</width>
      <height>32</height>
     </rect>
    </property>
@@ -61,7 +64,7 @@ background-color:#6d7993;
     <rect>
      <x>10</x>
      <y>310</y>
-     <width>351</width>
+     <width>290</width>
      <height>32</height>
     </rect>
    </property>
@@ -138,10 +141,10 @@ background-color:#6d7993;
   <widget class="QLabel" name="label_PC">
    <property name="geometry">
     <rect>
-     <x>390</x>
+     <x>290</x>
      <y>250</y>
      <width>331</width>
-     <height>16</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">

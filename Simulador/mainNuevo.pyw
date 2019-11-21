@@ -20,10 +20,10 @@ matplotlib.use('Qt4Agg')
 import mysql.connector
 from mysql.connector import Error
 from mysql.connector import errorcode
-#update:17/11
-#rafaga de mq?
-#decime te sigo
-#laburo abajo
+import time
+
+#update:18/11set
+
 class Dialogo(QDialog):
   def __init__(self):
     super().__init__()
@@ -207,12 +207,18 @@ class Ventana(QMainWindow):
   self.carga_particionFijas.pushButtonAgregarParticion.clicked.connect(self.agregar_fila_particiones)
   self.dialogoImportar.pushButtonCargar.clicked.connect(self.loadProceso)
 
-  self.pushButton_Simular.clicked.connect(self.asignacion_memoria)
+  #self.pushButton_Simular.clicked.connect(self.asignacion_memoria)
 
   self.dialogresultsim.pushButton_verGantt.clicked.connect(self.gantt)
   #cosas que disparan al apretar "Simular" en Ventana
+  #self.dialogresultsim.pushButton_verGantt.clicked.connect(self.mapa_de_memoria)
 
-  self.pushButton_Simular.clicked.connect(self.mapa_de_memoria)
+  #self.pushButton_Simular.clicked.connect(self.mapa_de_memoria)
+  self.dialogresultsim.pushButtonStart.clicked.connect(self.asignacion_memoria)
+
+
+
+  
   self.pushButton_Simular.clicked.connect(self.mostrarResultSimulacion)
     
   self.pushButtonComparar.clicked.connect(self.mostrarComparacion)
@@ -237,12 +243,19 @@ class Ventana(QMainWindow):
   self.dialogoMQ.comboBox_alg3.currentIndexChanged.connect(self.checkQcola3)
   self.dialogoMQ.comboBox_alg4.currentIndexChanged.connect(self.checkQcola4)
   self.dialogoMQ.comboBox_alg5.currentIndexChanged.connect(self.checkQcola5)
+
+  self.spinBox_Quantum.valueChanged.connect(self.qchanged)
+
+
+
+
   #self.dialogo.comboBoxTipoRaf.currentIndexChanged.connect(self.checkRaf)
   self.last_raf_item=2
   #0 es CPU, 1 es ES, 2 es DEFAULT
   #self.dialogo.comboBoxTipoRaf.currentIndexChanged
   self.dialogoMQ.pushButton_cancelar.clicked.connect(self.closeMQ)
   self.dialogoMQ.pushButton_aceptar.clicked.connect(self.loadAlgoritmosMQ)
+  #self.dialogresultsim.spinBoxClock.valueChanged.connect(self.mapa_de_memoria_variable)
   #----------------------------------------------------------------
   #pongo todo en disabled las opciones de cola de la ventana de MQ
   self.inicializarOpcMQ()
@@ -256,6 +269,33 @@ class Ventana(QMainWindow):
   #considero que el calculo de los labels de tam de memoria para procesos y so, se hace recien cuando le 
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
  
+
+
+
+ def qchanged(self):
+   if self.spinBox_Quantum.value()>0:
+     if not self.pushButton_Simular.isEnabled():
+       self.pushButton_Simular.setEnabled(True)
+   if self.spinBox_Quantum.value()==0:
+     if self.pushButton_Simular.isEnabled():
+       self.pushButton_Simular.setEnabled(False)
+
+
+ def clockchanged(self):
+   print('IA STOY ARTA')
+   #time.sleep(segundos)
+   #cerca de donde maso, al lado del clock?
+   #no funca lo de actualizar el valor en el spin?
+   #wtffff
+   
+   #o sea, en vez de que se active con simular, que se active con ese boton? 
+   #dale,va
+   #cuando presionas simular solo aparezca dialogcuando presionas start que aparezca mapa
+  
+      
+
+
+
  def primeravezvalor(self):
    if not self.dialogo.spinBoxTiempo.value()==0:
      if not self.dialogo.radioButtonES.isEnabled():
@@ -268,21 +308,15 @@ class Ventana(QMainWindow):
        if self.dialogo.radioButtonES.isChecked():
          if not self.dialogo.pushButtonAgregarRafaga.isEnabled():
            self.dialogo.pushButtonAgregarRafaga.setEnabled(True)
-     
-
-
-
-
-
+    
  def checkpushButtonAgregarRafaga(self):
    if not self.dialogo.spinBoxTiempo.value() ==0:
      print("distinto de 0")
      if not self.dialogo.pushButtonAgregarRafaga.isEnabled():
        print("no esta habilitado")
        self.dialogo.pushButtonAgregarRafaga.setEnabled(True)
-
-
-
+#me ves ahora?
+ """
  def checkcampoq(self):
    if not self.comboBox_Algoritmos.currentText()=='RR':
      if self.spinBox_Quantum.isEnabled():
@@ -290,6 +324,22 @@ class Ventana(QMainWindow):
    else:
      if not self.spinBox_Quantum.isEnabled():
        self.spinBox_Quantum.setEnabled(True)
+ """
+ def checkcampoq(self):
+   if not self.comboBox_Algoritmos.currentText()=='RR':
+     if self.spinBox_Quantum.isEnabled():
+       self.spinBox_Quantum.setEnabled(False)
+     if self.comboBox_Algoritmos.currentText()=='COLAS MULTINIVEL':
+       if not self.pushButton_AceptarProc.isEnabled():
+         self.pushButton_AceptarProc.setEnabled(True)
+     else:
+       if self.pushButton_AceptarProc.isEnabled():
+         self.pushButton_AceptarProc.setEnabled(False)
+
+   else:
+     if not self.spinBox_Quantum.isEnabled():
+       self.spinBox_Quantum.setEnabled(True)
+
 
  def loadAlgoritmosMQ(self):
    if self.dialogoMQ.comboBox_alg1.isEnabled():
@@ -760,34 +810,38 @@ class Ventana(QMainWindow):
         if valor ==3:
             print("srtf")
             self.SRTF()
-  
+ 
    def EjecutarMQ():
         if len(self.colas_multinivel[0])>0:
             print('cola 0',self.colas_multinivel[0])
-            #Esto no funciona
             self.quantom=self.colaquantum[0]
-            self.q=self.quantom
+            self.q=self.listaq[0]
             buscarAlgoritmo(self.listAlgoritmoInt[0],self.colas_multinivel[0])
+            self.listaq[0]=self.q
         elif len(self.colas_multinivel[1])>0:
             print('cola 1',self.colas_multinivel[1])
             self.quantom=self.colaquantum[1]
-            self.q=self.quantom
+            self.q=self.listaq[1]
             buscarAlgoritmo(self.listAlgoritmoInt[1],self.colas_multinivel[1])
+            self.listaq[1]=self.q
         elif len(self.colas_multinivel[2])>0:
             print('cola 2',self.colas_multinivel[2])
             self.quantom=self.colaquantum[2]
-            self.q=self.quantom
+            self.q=self.listaq[2]
             buscarAlgoritmo(self.listAlgoritmoInt[2],self.colas_multinivel[2])
+            self.listaq[2]=self.q
         elif len(self.colas_multinivel[3])>0:
             print('cola 3',self.colas_multinivel[3])
             self.quantom=self.colaquantum[3]
-            self.q=self.quantom
+            self.q=self.listaq[3]
             buscarAlgoritmo(self.listAlgoritmoInt[3],self.colas_multinivel[3])
+            self.listaq[3]=self.q
         elif len(self.colas_multinivel[4])>0:
             print('cola 4',self.colas_multinivel[4])
             self.quantom=self.colaquantum[4]
-            self.q=self.quantom
+            self.q=self.listaq[4]
             buscarAlgoritmo(self.listAlgoritmoInt[4],self.colas_multinivel[4])
+            self.listaq[4]=self.q
         else:
             pass
    
@@ -819,6 +873,7 @@ class Ventana(QMainWindow):
      self.MQ()
 
  def asignacion_memoria(self):
+  
   for i in self.lista_graficos:
     i[2]='disponible'
     i[4]=0
@@ -826,6 +881,7 @@ class Ventana(QMainWindow):
   if self.comboBox_Algoritmos.currentText() =='COLAS MULTINIVEL':  
     self.Mq=True
     self.limites()
+    self.listaq=self.colaquantum.copy()
   else:
     self.Mq=False
   self.clock=0
@@ -839,6 +895,11 @@ class Ventana(QMainWindow):
     #['idpart',dir_rli,part_size,idpc]
     self.mem_variable=[[0,0,self.valor_memoria_procesos,0]]
     self.asignacion_variable()
+
+  if not self.dialogresultsim.pushButton_verGantt.isEnabled():
+    self.dialogresultsim.pushButton_verGantt.setEnabled(True)
+
+  
  
  def arribo(self):
    self.colanuevo.extend(self.colaarribo.copy())
@@ -945,11 +1006,14 @@ class Ventana(QMainWindow):
      if len(self.colaauxiliarantirupturadegantt)>0:
        self.colabloqueado.append(self.colaauxiliarantirupturadegantt.copy())
        self.colaauxiliarantirupturadegantt=[]
+     #self.dialogresultsim.spinBoxClock.setValue(self.clock)
+     self.mapa_de_memoria_variable()
+     print('qcyo')
+     
      self.clock=self.clock+1
-     #if #completar aca: 
-     #  b=False
-     #saca nomas lo de thread
+     self.dialogresultsim.spinBoxClock.setValue(self.clock)
      print('asignacion',self.mem_variable)
+     #time.sleep(3)
      if self.Mq:
        if (len(self.colanuevo)==0 and len(self.colaarribo)==0 and len(self.colabloqueado)==0 and len(self.procesos_sin_asignar)<=j and (len(self.colas_multinivel[0])==0) and (len(self.colas_multinivel[1])==0) and (len(self.colas_multinivel[2])==0) and (len(self.colas_multinivel[3])==0) and (len(self.colas_multinivel[4])==0)):
         b=False
@@ -1086,6 +1150,13 @@ class Ventana(QMainWindow):
         b=False"""
 
  def mostrarResultSimulacion(self):
+   #self.fig= plt.figure('Mapa de memoria',figsize=(15,2))
+   #self.a,self.ax=plt.subplots(figsize=(15,2))
+   #self.ax.set_title('Mapa de memoria')
+   
+   self.fig= plt.figure('Mapa de memoria',figsize=(15,2))
+   plt.ion()
+   self.ax=self.fig.subplots()
    global cont_sim_2davez
    if cont_sim_2davez >=0:
     self.dialogresultsim.move(640,315)
@@ -1100,6 +1171,8 @@ class Ventana(QMainWindow):
     self.dialogresultsim.tableWidgetCListo.setItem(2,0,QTableWidgetItem('3'))
     self.dialogresultsim.tableWidgetCListo.setItem(2,1,QTableWidgetItem('7'))
     cont_sim_2davez = 0
+    if self.dialogresultsim.pushButton_verGantt.isEnabled():
+      self.dialogresultsim.pushButton_verGantt.setEnabled(False)
    
  def mostrarComparacion(self):
    self.dialogcompara.exec_()
@@ -1144,6 +1217,7 @@ class Ventana(QMainWindow):
       self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nueva_ta)
      else:
       self.dialogoImportar.label_error.setText("Error: el proceso seleccionado ya esta cargado")
+   """  
    if not self.pushButton_AceptarProc.isEnabled():
      self.pushButton_AceptarProc.setEnabled(True)
    if not self.comboBox_Algoritmos.isEnabled():
@@ -1152,6 +1226,14 @@ class Ventana(QMainWindow):
      self.spinBox_Quantum.setEnabled(True)
    if not self.pushButton_Simular.isEnabled():
      self.pushButton_Simular.setEnabled(True)
+   """
+   if not self.comboBox_Algoritmos.isEnabled():
+     self.comboBox_Algoritmos.setEnabled(True)
+   if not self.spinBox_Quantum.isEnabled():
+     self.spinBox_Quantum.setEnabled(True)
+   if not self.pushButton_Simular.isEnabled():
+     self.pushButton_Simular.setEnabled(True)
+     
 
 
    """
@@ -1189,9 +1271,103 @@ class Ventana(QMainWindow):
    if(self.radioButton_Fijas.isChecked()):
     self.mapa_de_memoria_fija()
    if(self.radioButton_Variables.isChecked()):
+     #self.mem_variable=[[0,0,self.valor_memoria_procesos,0]]
      self.mapa_de_memoria_variable()
-   
+ 
+ def animate(self):
+   print('y esto?')
+   category_names=[]
+   ys=[]
+   i=0
+   for elemento in self.mem_variable:
+     if len(elemento)>1:
+       if elemento[3]==0:
+         category_names.append('Idpart: '+str(elemento[0])+'\nIdpc: Libre\nFragInt:'+str(0))
+       else:
+         category_names.append('Idpart: '+str(elemento[0])+'\nIdpc:    '+ str(elemento[3])+'\nFragInt:'+str(0))
+       ys.append(elemento[2])
+       i=i+1
+   results={'mem':ys}
+   print(results)
+   labels = list(results.keys())
+   data = np.array(list(results.values()))
+   data_cum = data.cumsum(axis=1)
+   category_colors = plt.get_cmap('RdYlGn')(np.linspace(0.15, 0.85, data.shape[1]))
+   #fig, ax = plt.subplots(figsize=(9.2, 5))
+   self.ax.clear()
+   self.ax.invert_yaxis()
+   self.ax.xaxis.set_visible(True)
+   self.ax.set_xlim(0, np.sum(data, axis=1).max())
+   print('llegue aqui')
+   #verrrrrrrrrrrrr
+   for i, (colname, color) in enumerate(zip(category_names, category_colors)):
+     widths = data[:, i]
+     starts = data_cum[:, i] - widths
+     self.ax.barh(labels, widths, left=starts, height=0.5,label=colname, color=color)
+     xcenters = starts + widths / 2
+     r, g, b, _ = color
+     text_color = 'white' if r * g * b < 0.5 else 'darkgrey'
+     for y, (x, c) in enumerate(zip(xcenters, widths)):
+       self.ax.text(x, y, str(int(c)), ha='center', va='center',color=text_color)
+   self.ax.legend(bbox_to_anchor=(1,1))
+   #plt.show()
+
  def mapa_de_memoria_variable(self):
+   self.ax.remove()
+   self.ax=self.fig.subplots()
+   self.animate()
+   plt.show()
+   plt.waitforbuttonpress(timeout=2) 
+
+   def animate1():
+     print('y esto?')
+     category_names=[]
+     ys=[]
+     i=0
+     for elemento in self.mem_variable:
+      print(elemento)
+      if len(elemento)>1:
+        if elemento[3]==0:
+          category_names.append('Idpart: '+str(elemento[0])+'\nIdpc: Libre\nFragInt:'+str(0))
+        else:
+          category_names.append('Idpart: '+str(elemento[0])+'\nIdpc:    '+ str(elemento[3])+'\nFragInt:'+str(0))
+        ys.append(elemento[2])
+        i=i+1
+     results={'mem':ys}
+     print(results)
+     labels = list(results.keys())
+     data = np.array(list(results.values()))
+     data_cum = data.cumsum(axis=1)
+     category_colors = plt.get_cmap('RdYlGn')(np.linspace(0.15, 0.85, data.shape[1]))
+     #fig, ax = plt.subplots(figsize=(9.2, 5))
+     ax.clear()
+     ax.invert_yaxis()
+     ax.xaxis.set_visible(True)
+     ax.set_xlim(0, np.sum(data, axis=1).max())
+     print('llegue aqui')
+     #verrrrrrrrrrrrr
+     for i, (colname, color) in enumerate(zip(category_names, category_colors)):
+       widths = data[:, i]
+       starts = data_cum[:, i] - widths
+       ax.barh(labels, widths, left=starts, height=0.5,label=colname, color=color)
+       xcenters = starts + widths / 2
+       r, g, b, _ = color
+       text_color = 'white' if r * g * b < 0.5 else 'darkgrey'
+       for y, (x, c) in enumerate(zip(xcenters, widths)):
+         ax.text(x, y, str(int(c)), ha='center', va='center',color=text_color)
+     ax.legend(bbox_to_anchor=(1,1))
+     #ncol=len(category_names), bbox_to_anchor=(0,1),
+     #          loc='lower left', fontsize='small')
+     return ax
+   #self.animate()
+   #ani=animation.FuncAnimation(fig,animate, interval=3000,repeat=False)
+   #plt.show()
+   #time.sleep(3)
+   #self.ax.remove()
+   #time.sleep(3)
+   print('que paso aca?')
+
+ def mapa_de_memoria_variable_original(self):
    print('entre al grafico variable')
    global cont_sim_2davez
    if cont_sim_2davez >=0:
@@ -1240,6 +1416,7 @@ class Ventana(QMainWindow):
     #          loc='lower left', fontsize='small')
     #ani=animation.FuncAnimation(fig,animate(), interval=3000,repeat=True)
     plt.show()
+    print('pero por que no anda esto?')
 
  def mapa_de_memoria_fija(self):
    print('entre al grafico')
@@ -1395,7 +1572,7 @@ class Ventana(QMainWindow):
     self.dialogo.tableWidgetRafaga.setItem(contr,0,tipo)
     self.dialogo.tableWidgetRafaga.setItem(contr,1,tiempo)
     self.dialogo.spinBoxTiempo.setValue(0)
-    self.dialogo.lineEdit_Tiempo.setText('')
+    #self.dialogo.lineEdit_Tiempo.setText('')
     contr=contr+1
     if self.dialogo.pushButtonAgregarRafaga.isEnabled():
       self.dialogo.pushButtonAgregarRafaga.setEnabled(False)
@@ -1612,14 +1789,18 @@ class Ventana(QMainWindow):
      self.pushButton_AceptarProc.setEnabled(True)
    if not self.pushButton_Simular.isEnabled():
      self.pushButton_Simular.setEnabled(True)
+   if not self.comboBox_Algoritmos.isEnabled():
+     self.comboBox_Algoritmos.setEnabled(True)
+   if not self.spinBox_Quantum.isEnabled():
+     self.spinBox_Quantum.setEnabled(True)
 
    def limpiar_carga_rafagas():
      global contr
      contr = 0
      self.dialogo.tableWidgetRafaga.setRowCount(0)
      self.dialogo.spinBoxTiempo.setValue(0)
-     self.dialogo.lineEdit_Tiempo.setText(" ")
-     self.dialogo.lineEditDescrip.setText(" ")
+     #self.dialogo.lineEdit_Tiempo.setText(" ")
+     self.dialogo.lineEditDescrip.setText("")
      self.dialogo.spinBoxPriori.setValue(0)
      self.dialogo.spinBoxTamProc.setValue(0)
      self.dialogo.spinBoxTiempoarr.setValue(0)

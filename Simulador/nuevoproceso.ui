@@ -206,22 +206,6 @@ color:white;
      <property name="title">
       <string>Rafagas</string>
      </property>
-     <widget class="QLineEdit" name="lineEdit_Tiempo">
-      <property name="geometry">
-       <rect>
-        <x>190</x>
-        <y>0</y>
-        <width>51</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color:white;</string>
-      </property>
-      <property name="text">
-       <string>Tiempo</string>
-      </property>
-     </widget>
      <widget class="QPushButton" name="pushButtonAgregarRafaga">
       <property name="geometry">
        <rect>
