@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CargadeParticion</class>
+ <widget class="QDialog" name="CargadeParticion">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>395</width>
+    <height>494</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Cargar Particiones</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QDialog{
+background-color:#6d7993;
+font-family: arial,verdana;
+}
+QLineEdit{
+background-color:#b1a296;
+border: 0;
+font-size:14px;
+height:30px;
+}
+QLabel{
+color:black;
+font-size:14px;
+}
+QPushButton{
+background-color:#5d5c61;
+color:white;
+
+}
+QPushButton:hover{
+background-color:#062f4f;
+color:white;
+}
+QTableWidget{
+background-color: #white;
+}
+
+
+</string>
+  </property>
+  <widget class="QWidget" name="widgetContenedor" native="true">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>50</y>
+     <width>361</width>
+     <height>171</height>
+    </rect>
+   </property>
+   <widget class="QWidget" name="widget_cargaParticiones" native="true">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>361</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QWidget
+{
+background-color:#dcd0c0;
+}
+
+QPushButton{
+background-color:#5d5c61;
+color:white;
+height:20px;
+}
+QPushButton:hover{
+background-color:#062f4f;
+color:white;
+}</string>
+    </property>
+    <widget class="QLabel" name="label_MemDisp">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>50</y>
+       <width>241</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Memoria Disponible:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_tamParticion">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>90</y>
+       <width>131</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Tamaño Partición:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="botonFinalizar">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>130</y>
+       <width>141</width>
+       <height>32</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
+     <property name="text">
+      <string>Finalizar</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButtonAgregarParticion">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>88</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white;</string>
+     </property>
+     <property name="text">
+      <string>Agregar</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBoxTam">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>90</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color:white;</string>
+     </property>
+     <property name="value">
+      <number>1</number>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButtonQuitarPart">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>130</y>
+       <width>141</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+background-color:#5d5c61;
+color:white;
+height:20px;
+}
+QPushButton:hover{
+background-color:rgb(128, 47, 36);
+color:white;
+}</string>
+     </property>
+     <property name="text">
+      <string>Limpiar</string>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QLabel" name="label_cargarParticiones">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>20</y>
+     <width>131</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>-1</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color:white;</string>
+   </property>
+   <property name="text">
+    <string>Cargar Particiones</string>
+   </property>
+  </widget>
+  <widget class="QTableWidget" name="tableWidgetCargaParticion">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>230</y>
+     <width>361</width>
+     <height>251</height>
+    </rect>
+   </property>
+   <attribute name="horizontalHeaderDefaultSectionSize">
+    <number>85</number>
+   </attribute>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
