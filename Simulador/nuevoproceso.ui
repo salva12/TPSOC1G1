@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>993</width>
-    <height>437</height>
+    <height>434</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -193,6 +193,9 @@ color:white;
      <property name="styleSheet">
       <string notr="true">background-color:white;</string>
      </property>
+     <property name="value">
+      <number>1</number>
+     </property>
     </widget>
     <widget class="QGroupBox" name="groupBox">
      <property name="geometry">
@@ -277,6 +280,22 @@ color:white;
        <string notr="true">background-color:white;</string>
       </property>
      </widget>
+     <widget class="QLabel" name="label_error_tam">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>0</y>
+        <width>211</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color:red;</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
     </widget>
     <widget class="QPushButton" name="pushButtonCargar">
      <property name="geometry">
@@ -327,7 +346,7 @@ color:white;
       <x>300</x>
       <y>0</y>
       <width>651</width>
-      <height>311</height>
+      <height>371</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -339,11 +358,14 @@ color:white;
        <x>10</x>
        <y>10</y>
        <width>631</width>
-       <height>291</height>
+       <height>271</height>
       </rect>
      </property>
      <property name="styleSheet">
       <string notr="true">background-color:white;</string>
+     </property>
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
      </property>
      <property name="rowCount">
       <number>0</number>
@@ -355,18 +377,17 @@ color:white;
       <bool>true</bool>
      </attribute>
     </widget>
-   </widget>
-   <widget class="QPushButton" name="pushButtonImportar">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>320</y>
-      <width>651</width>
-      <height>51</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton{
+    <widget class="QPushButton" name="pushButtonImportar">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>290</y>
+       <width>481</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
 background-color:#5d5c61;
 color:white;
 height:20px;
@@ -375,10 +396,77 @@ QPushButton:hover{
 background-color:#062f4f;
 color:white;
 }</string>
-    </property>
-    <property name="text">
-     <string>IMPORTAR</string>
-    </property>
+     </property>
+     <property name="text">
+      <string>IMPORTAR</string>
+     </property>
+    </widget>
+    <widget class="QWidget" name="widget" native="true">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>290</y>
+       <width>141</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color:#6d7993;</string>
+     </property>
+     <widget class="QLabel" name="labelProcesoQuitar">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>60</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color:white;</string>
+      </property>
+      <property name="text">
+       <string>Proceso:</string>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="spinBoxQuitar">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>10</y>
+        <width>51</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color:white;</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButtonQuitar">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>40</y>
+        <width>113</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QPushButton{
+background-color:#5d5c61;
+color:white;
+height:20px;
+}
+QPushButton:hover{
+background-color:rgb(128, 47, 36);
+color:white;
+}</string>
+      </property>
+      <property name="text">
+       <string>Quitar</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
   </widget>
  </widget>

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>654</width>
-    <height>369</height>
+    <width>648</width>
+    <height>385</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,9 +23,12 @@ background-color:#6d7993;
     <rect>
      <x>10</x>
      <y>40</y>
-     <width>631</width>
+     <width>621</width>
      <height>171</height>
     </rect>
+   </property>
+   <property name="editTriggers">
+    <set>QAbstractItemView::NoEditTriggers</set>
    </property>
    <property name="alternatingRowColors">
     <bool>false</bool>
@@ -43,7 +46,7 @@ background-color:#6d7993;
     <number>0</number>
    </property>
    <attribute name="verticalHeaderStretchLastSection">
-    <bool>true</bool>
+    <bool>false</bool>
    </attribute>
   </widget>
   <widget class="QPushButton" name="pushButtonVertabla">
@@ -51,7 +54,7 @@ background-color:#6d7993;
     <rect>
      <x>350</x>
      <y>310</y>
-     <width>290</width>
+     <width>281</width>
      <height>32</height>
     </rect>
    </property>
@@ -64,7 +67,7 @@ background-color:#6d7993;
     <rect>
      <x>10</x>
      <y>310</y>
-     <width>290</width>
+     <width>270</width>
      <height>32</height>
     </rect>
    </property>
@@ -75,8 +78,8 @@ background-color:#6d7993;
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>250</x>
-     <y>-2</y>
+     <x>160</x>
+     <y>0</y>
      <width>271</width>
      <height>41</height>
     </rect>
@@ -143,12 +146,12 @@ background-color:#6d7993;
     <rect>
      <x>290</x>
      <y>250</y>
-     <width>331</width>
+     <width>600</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>Procesos Cargados: </string>
+    <string>Procesos:</string>
    </property>
   </widget>
   <widget class="QSpinBox" name="spinBox_Proceso">
@@ -177,9 +180,25 @@ background-color:#6d7993;
   <widget class="QLabel" name="label_error">
    <property name="geometry">
     <rect>
-     <x>390</x>
+     <x>300</x>
      <y>270</y>
-     <width>341</width>
+     <width>431</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color:red;</string>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelEPI">
+   <property name="geometry">
+    <rect>
+     <x>112</x>
+     <y>350</y>
+     <width>411</width>
      <height>21</height>
     </rect>
    </property>

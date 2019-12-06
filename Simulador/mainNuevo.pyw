@@ -23,8 +23,8 @@ from mysql.connector import Error
 from mysql.connector import errorcode
 import time
 
-#update:01/12set
-#te puedo llamarr? como quieraste estoy lamando creo ahre
+#update:06/12set
+
 class Dialogo(QDialog):
   def __init__(self):
     super().__init__()
@@ -85,6 +85,7 @@ class Ventana(QMainWindow):
   self.dialogo.pushButtonCargar.clicked.connect(self.cargarProcesosYRafagasenBD)
   #aca(en self.cargarProcesosYRafagasenBD), y cuando apreto el boton de importar tambien, habilito el boton de aceptar ALgoritmo
   self.AceptarMem.clicked.connect(self.AlmacenarTamMemIngresado)
+  self.AceptarMem.clicked.connect(self.checkproceso)
   self.tam_Memoria=0
   self.por_so=0 
   self.grado_multiprogramacion=0
@@ -172,6 +173,7 @@ class Ventana(QMainWindow):
   self.idpart=0
   self.listaprocesos= []
   self.colaauxiliarantirupturadegantt=[]
+  
   self.rafagas={}
   self.tiempoespera={}
   self.tiemporetorno={}
@@ -179,8 +181,6 @@ class Ventana(QMainWindow):
   self.colanuevoporclock=[]
   self.colalistoporclock=[]
   self.colabloqueadoporclock=[]
-  self.listohistorico=[]
-  self.bloqhistorico=[]
   self.colabloqueado=[]
   self.colaesgantt=[]
   self.label_MemProcesos.setText('0 KB')
@@ -225,6 +225,7 @@ class Ventana(QMainWindow):
 
   #self.pushButton_Simular.clicked.connect(self.mapa_de_memoria)
   self.dialogresultsim.pushButtonStart.clicked.connect(self.asignacion_memoria)
+  self.dialogresultsim.pushButtonStop.clicked.connect(self.abortar)
 
 
 
@@ -232,9 +233,9 @@ class Ventana(QMainWindow):
   self.pushButton_Simular.clicked.connect(self.mostrarResultSimulacion)
     
   self.pushButtonComparar.clicked.connect(self.mostrarComparacion)
-  self.pushButtonComparar.clicked.connect(self.loadvalores)
   self.pushButton_AceptarProc.clicked.connect(self.aceptar_algoritmo_presionado)
   self.dialogo.pushButtonImportar.clicked.connect(self.mostrarTablaImportar)
+  self.dialogo.pushButtonQuitar.clicked.connect(self.borrarProcesoCargado)
   self.dialogoImportar.tableWidgetImportar.setColumnCount(6)
   self.dialogoImportar.tableWidgetImportar.setHorizontalHeaderLabels(['idpc','Descripcion','Prioridad','Tamaño','TI','TA'])
   self.dialogcompara.tableWidgetTEspera.setColumnCount(6)
@@ -246,12 +247,20 @@ class Ventana(QMainWindow):
   self.dialogcompara.tableWidgetTRetornoP.setColumnCount(5)
   self.dialogcompara.tableWidgetTRetornoP.setHorizontalHeaderLabels(['FCFS','Prioridades','RR','SRTF','C.Multinivel'])
   self.dialogresultsim.tableWidgetCListo.setColumnCount(2)
-  self.dialogresultsim.tableWidgetCListo.setHorizontalHeaderLabels(['idpc','Ti',])
+  self.dialogresultsim.tableWidgetCListo.setHorizontalHeaderLabels(['idpc','Ti - CPU Total',])
   self.dialogresultsim.tableWidgetCBloqueado.setColumnCount(2)
-  self.dialogresultsim.tableWidgetCBloqueado.setHorizontalHeaderLabels(['idpc','Ti',])
-  self.dialogresultsim.tableWidgetCNuevo.setColumnCount(2)
-  self.dialogresultsim.tableWidgetCNuevo.setHorizontalHeaderLabels(['idpc','Ti',])
-
+  self.dialogresultsim.tableWidgetCBloqueado.setHorizontalHeaderLabels(['idpc','Ti - ES Total',])
+  self.dialogresultsim.tableWidgetCNuevo.setColumnCount(1)
+  self.dialogresultsim.tableWidgetCNuevo.setHorizontalHeaderLabels(['idpc',])
+  self.dialogresultsim.pushButtonStop.clicked.connect(self.enablestart)
+  self.spinBoxTamMemoria.valueChanged.connect(self.bloquearparteder)
+  self.spinBoxPorcSO.valueChanged.connect(self.bloquearparteder)
+  self.radioButton_Fijas.toggled.connect(self.bloquearparteder)
+  self.radioButton_Variables.toggled.connect(self.bloquearparteder)
+  self.radioButton_First.toggled.connect(self.bloquearparteder)
+  self.radioButton_Best.toggled.connect(self.bloquearparteder)
+  self.radioButton_Worst.toggled.connect(self.bloquearparteder)
+  self.labelEP.setText('')
   self.dialogoImportar.pushButtonImportar.clicked.connect(self.update_tablaProcesos)
   #dentro de este self(update_tablaProcesos) tambien habilito el boton de aceptar algoritmo
   self.dialogoImportar.pushButtonVertabla.clicked.connect(self.cargarTabla)
@@ -265,6 +274,9 @@ class Ventana(QMainWindow):
   self.dialogoImportar.spinBox_Proceso.valueChanged.connect(self.check_procesoValido)
   self.spinBox_Quantum.valueChanged.connect(self.qchanged)
   self.dialogo.pushButtonAgregarRafaga.setEnabled(False)
+  self.carga_particionFijas.pushButtonQuitarPart.clicked.connect(self.LimpiarParticion)
+
+
   
 
 
@@ -288,12 +300,113 @@ class Ventana(QMainWindow):
   #DATOS BD
   self.host='localhost'
   self.database='simulador'
-  self.user='root'
-  self.password='letra123'
+  self.user='c1g1'
+  self.password='1234'
   
   #considero que el calculo de los labels de tam de memoria para procesos y so, se hace recien cuando le 
   #di algun valor al spinbox de so, sino estaria dividiendo por el valor 0
 
+
+
+ def LimpiarParticion(self):
+   for i in range(self.carga_particionFijas.tableWidgetCargaParticion.rowCount()):
+     self.carga_particionFijas.tableWidgetCargaParticion.removeRow(0)
+   self.valor_memoria_procesos = self.tam_Memoria-self.valor_so
+   self.carga_particionFijas.label_MemDisp.setText("Memoria Disponible: "+str(round(self.valor_memoria_procesos,2)) + " KB")
+   self.lista_graficos=[]
+   print(self.lista_graficos)
+
+#['idpc','Descripcion','Prioridad','Tamaño','TI','TA','TI-ES','InicioGantt','FinGantt']
+ def checkproceso(self):
+   if self.listaprocesos:
+     self.labelEP.setText("")
+     if not self.comboBox_Algoritmos.isEnabled():
+       self.comboBox_Algoritmos.setEnabled(True)
+     if not self.label_Algoritmo.isEnabled():
+       self.label_Algoritmo.setEnabled(True)
+     if not self.spinBox_Quantum.isEnabled():
+       self.spinBox_Quantum.setEnabled(True)
+     if not self.label_Quantum.isEnabled():
+       self.label_Quantum.setEnabled(True)
+     if not self.pushButton_AceptarProc.isEnabled():
+       self.pushButton_AceptarProc.setEnabled(True)
+     if not self.pushButtonComparar.isEnabled():
+       self.pushButtonComparar.setEnabled(True)
+     if not self.pushButton_Simular.isEnabled():
+       self.pushButton_Simular.setEnabled(True)
+     invalido=False
+     #Variables - Fijas
+     if self.radioButton_Variables.isChecked():
+       for i in self.listaprocesos:
+         if i[3] >self.valor_memoria_procesos:
+           invalido=True
+     if self.radioButton_Fijas.isChecked():
+       for i in self.listaprocesos:
+         if i[3]>self.tamPartFijMax:
+           invalido=True
+     #invalido
+     if invalido:
+       self.labelEP.setText("Tamaño procesos invalidos\nControlar procesos cargados")
+       if self.comboBox_Algoritmos.isEnabled():
+         self.comboBox_Algoritmos.setEnabled(False)
+       if self.label_Algoritmo.isEnabled():
+         self.label_Algoritmo.setEnabled(False)
+       if self.spinBox_Quantum.isEnabled():
+         self.spinBox_Quantum.setEnabled(False)
+       if self.label_Quantum.isEnabled():
+         self.label_Quantum.setEnabled(False)
+       if self.pushButton_AceptarProc.isEnabled():
+         self.pushButton_AceptarProc.setEnabled(False)
+       if self.pushButtonComparar.isEnabled():
+         self.pushButtonComparar.setEnabled(True)
+       if self.pushButton_Simular.isEnabled():
+         self.pushButton_Simular.setEnabled(False)
+   else:
+     self.labelEP.setText("")
+     if self.comboBox_Algoritmos.isEnabled():
+       self.comboBox_Algoritmos.setEnabled(False)
+     if self.label_Algoritmo.isEnabled():
+       self.label_Algoritmo.setEnabled(False)
+     if self.spinBox_Quantum.isEnabled():
+       self.spinBox_Quantum.setEnabled(False)
+     if self.label_Quantum.isEnabled():
+       self.label_Quantum.setEnabled(False)
+     if self.pushButton_AceptarProc.isEnabled():
+       self.pushButton_AceptarProc.setEnabled(False)
+     if self.pushButtonComparar.isEnabled():
+       self.pushButtonComparar.setEnabled(True)
+     if self.pushButton_Simular.isEnabled():
+       self.pushButton_Simular.setEnabled(False)
+
+ def bloquearparteder(self):
+   if self.boton_GestProcesos.isEnabled():
+     self.boton_GestProcesos.setEnabled(False)
+
+   if self.comboBox_Algoritmos.isEnabled():
+     self.comboBox_Algoritmos.setEnabled(False)
+
+   if self.label_Algoritmo.isEnabled():
+     self.label_Algoritmo.setEnabled(False)
+     
+
+   if self.spinBox_Quantum.isEnabled():
+     self.spinBox_Quantum.setEnabled(False)
+
+   if self.label_Quantum.isEnabled():
+     self.label_Quantum.setEnabled(False)
+  
+   if self.pushButton_AceptarProc.isEnabled():
+     self.pushButton_AceptarProc.setEnabled(False)
+
+   if self.pushButtonComparar.isEnabled():
+     self.pushButtonComparar.setEnabled(True)
+
+   if self.pushButton_Simular.isEnabled():
+     self.pushButton_Simular.setEnabled(False)
+
+ def enablestart(self):
+   if not self.dialogresultsim.pushButtonStart.isEnabled():
+     self.dialogresultsim.pushButtonStart.setEnabled(True)
 
  def check_procesoValido(self):
    if self.dialogoImportar.spinBox_Proceso.value() not in self.listaIDprocesosventImportar:
@@ -306,9 +419,6 @@ class Ventana(QMainWindow):
        self.dialogoImportar.pushButtonImportar.setEnabled(True)
      if not self.dialogoImportar.pushButtonCargar.isEnabled():
        self.dialogoImportar.pushButtonCargar.setEnabled(True)
-
- def loadvalores(self):
-   print("holaaaa entre")
 
  def checktam_proceso(self):
    if self.radioButton_Variables.isChecked():
@@ -339,7 +449,7 @@ class Ventana(QMainWindow):
        self.pushButton_Simular.setEnabled(False)
 
  def clockchanged(self):
-   if self.b==False:
+   if self.b==False and self.stop==False:
      self.dialogresultsim.spinBoxClock.setMaximum(self.clock)
      #Tiempo ejecutado inexistente
      if self.clock<self.dialogresultsim.spinBoxClock.value():
@@ -487,7 +597,6 @@ class Ventana(QMainWindow):
      if not self.dialogoImportar.pushButtonImportar.isEnabled():
        self.dialogoImportar.pushButtonImportar.setEnabled(True)
     
-
  def inicializarOpcMQ(self):
    self.dialogoMQ.label_algCola1.setEnabled(True)
    self.dialogoMQ.label_algCola2.setEnabled(True)
@@ -512,6 +621,11 @@ class Ventana(QMainWindow):
 
  def aceptar_algoritmo_presionado(self):
    if self.comboBox_Algoritmos.currentText()=="COLAS MULTINIVEL":
+     self.dialogoMQ.spinBox_q1.setMinimum(1)
+     self.dialogoMQ.spinBox_q2.setMinimum(1)
+     self.dialogoMQ.spinBox_q3.setMinimum(1)
+     self.dialogoMQ.spinBox_q4.setMinimum(1)
+     self.dialogoMQ.spinBox_q5.setMinimum(1)
      self.dialogoMQ.exec_()
 
  def checkflagporcSO(self):
@@ -718,17 +832,23 @@ class Ventana(QMainWindow):
         print("ESTE ES RAFITA DESPUES DE DECREMENTAR",rafita)
         self.rafagas.update({str(self.colalisto[0][0]):rafita})
         print("RAFAGA",self.rafagas)
+        self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
+        if self.Mq:
+          if rafita[0][0]==1 and self.tiempo[4][1]=='':
+            self.cerrartiempo()
+            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
+        else:
+          if rafita[0][0]==1 and self.tiempo[1][1]=='':
+            self.cerrartiempo()
+            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
         if rafita[0][3]==0:
           if len(rafita)>1:
             self.colaauxiliarantirupturadegantt=self.colalisto[0].copy()
+
             #self.colabloqueado.append(self.colalisto[0].copy())
           else:
             self.procactual=self.colalisto[0][0]
             self.seterminoalgo=True
-          if rafita[0][0]==1:
-            self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
-            self.cerrartiempo()
-            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
           del rafita[0]
           self.rafagas.update({str(self.colalisto[0][0]):rafita})
           del self.colalisto[0]
@@ -744,13 +864,15 @@ class Ventana(QMainWindow):
           self.colagantt.append(caux.copy())
           self.colagantt[-1].extend([self.clock,self.clock+1])
         print('colalisto',self.colalisto)
+        print('colabloqueado',self.colabloqueado)
+        print('colanuevo',self.colanuevo)
         print('colagantt',self.colagantt)
-        #['idpc','Descripcion','Prioridad','Tamaño','TI','TA','Iniciogantt','Fingantt']
+        #['idpc','Descripcion','Prioridad','Tamaño','TI','TA','TI-ES','InicioGantt','FinGantt']
  
  def RR(self):
     print('RR')
-    print(self.quantom)
-    print(self.colalisto)
+    print('quantum',self.quantom)
+    print('colalisto antes de ejecutar RR',self.colalisto)
     if len(self.colalisto)>0:
         caux=self.colalisto[0].copy()
         caux[4]=1
@@ -763,6 +885,15 @@ class Ventana(QMainWindow):
         self.rafagas.update({str(self.colalisto[0][0]):rafita})
         print("RAFAGA",self.rafagas)
         
+        self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
+        if self.Mq:
+          if rafita[0][0]==1 and self.tiempo[4][1]=='':
+            self.cerrartiempo()
+            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
+        else:
+          if rafita[0][0]==1 and self.tiempo[2][1]=='':
+            self.cerrartiempo()
+            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
 
         if len(self.colagantt)>0 and self.colagantt[-1][0]==caux[0] and self.clock==self.colagantt[-1][7]:
           self.colagantt[-1][4]=self.colagantt[-1][4]+1
@@ -777,16 +908,15 @@ class Ventana(QMainWindow):
             if rafita[0][3]==0:
               #Termina quantum y justo termina la rafaga
               if len(rafita)>1:
+                print('QUE PASO ACA?',rafita)
                 #termina quantum y se bloquea el proceso (Lo manda al cola del bloqueado)
                 self.colaauxiliarantirupturadegantt=self.colalisto[0].copy()
+               
                 #self.colabloqueado.append(self.colalisto[0].copy())
               else:
+                print('llego aca?')
                 self.procactual=self.colalisto[0][0]
                 self.seterminoalgo=True
-              if rafita[0][0]==1:
-                self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
-                self.cerrartiempo()
-                self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
               del rafita[0]
               self.rafagas.update({str(self.colalisto[0][0]):rafita})
               del self.colalisto[0]
@@ -800,15 +930,17 @@ class Ventana(QMainWindow):
             if rafita[0][3]==0:
               #Termina la rafaga
               if len(rafita)>1:
+                print('Osea entro aca?',rafita)
                 #termina la rafaga pero no el proceso: se bloquea el proceso (Lo manda al cola del bloqueado)
                 self.colaauxiliarantirupturadegantt=self.colalisto[0].copy()
+                
               else:
                 self.procactual=self.colalisto[0][0]
                 self.seterminoalgo=True
-              if rafita[0][0]==1:
+              """if rafita[0][0]==1:
                 self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
                 self.cerrartiempo()
-                self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
+                self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})"""
               del rafita[0]
               self.rafagas.update({str(self.colalisto[0][0]):rafita})
               del self.colalisto[0]
@@ -819,6 +951,8 @@ class Ventana(QMainWindow):
               del self.colalisto[0]"""
               
         print('colalisto',self.colalisto)
+        print('colabloqueado',self.colabloqueado)
+        print('colanuevo',self.colanuevo)
         print('colagantt',self.colagantt)
         print('q',self.q)
         
@@ -835,17 +969,23 @@ class Ventana(QMainWindow):
         print("ESTE ES RAFITA DESPUES DE DECREMENTAR",rafita)
         self.rafagas.update({str(self.colalisto[0][0]):rafita})
         print("RAFAGA",self.rafagas)
+        self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
+        if self.Mq:
+          if rafita[0][0]==1 and self.tiempo[4][1]=='':
+            self.cerrartiempo()
+            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
+        else:
+          if rafita[0][0]==1 and self.tiempo[3][1]=='':
+            self.cerrartiempo()
+            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
         if rafita[0][3]==0:
           if len(rafita)>1:
             self.colaauxiliarantirupturadegantt=self.colalisto[0].copy()
+            
             #self.colabloqueado.append(self.colalisto[0].copy())
           else:
             self.procactual=self.colalisto[0][0]
             self.seterminoalgo=True
-          if rafita[0][0]==1:
-            self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
-            self.cerrartiempo()
-            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
           del rafita[0]
           self.rafagas.update({str(self.colalisto[0][0]):rafita})
           del self.colalisto[0]
@@ -857,6 +997,10 @@ class Ventana(QMainWindow):
         else:
           self.colagantt.append(caux.copy())
           self.colagantt[-1].extend([self.clock,self.clock+1])
+        print('colalisto',self.colalisto)
+        print('colabloqueado',self.colabloqueado)
+        print('colanuevo',self.colanuevo)
+        print('colagantt',self.colagantt)
         
  def FCFS(self):
     print('FCFS')
@@ -870,17 +1014,23 @@ class Ventana(QMainWindow):
         print("ESTE ES RAFITA DESPUES DE DECREMENTAR",rafita)
         self.rafagas.update({str(self.colalisto[0][0]):rafita})
         print("RAFAGA",self.rafagas)
+        self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
+        if self.Mq:
+          if rafita[0][0]==1 and self.tiempo[4][1]=='':
+            self.cerrartiempo()
+            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
+        else:
+          if rafita[0][0]==1 and self.tiempo[0][1]=='':
+            self.cerrartiempo()
+            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
         if rafita[0][3]==0:
           if len(rafita)>1:
             self.colaauxiliarantirupturadegantt=self.colalisto[0].copy()
+            
             #self.colabloqueado.append(self.colalisto[0].copy())
           else:
             self.procactual=self.colalisto[0][0]
             self.seterminoalgo=True
-          if rafita[0][0]==1:
-            self.tiempo=self.tiempoespera[str(self.colalisto[0][0])]
-            self.cerrartiempo()
-            self.tiempoespera.update({str(self.colalisto[0][0]):self.tiempo})
           del rafita[0]
           self.rafagas.update({str(self.colalisto[0][0]):rafita})
           del self.colalisto[0]
@@ -892,6 +1042,10 @@ class Ventana(QMainWindow):
         else:
           self.colagantt.append(caux.copy())
           self.colagantt[-1].extend([self.clock,self.clock+1])
+        print('colalisto',self.colalisto)
+        print('colabloqueado',self.colabloqueado)
+        print('colanuevo',self.colanuevo)
+        print('colagantt',self.colagantt)
 
  def limites(self):
    if self.cant_cola==2:
@@ -906,7 +1060,7 @@ class Ventana(QMainWindow):
  def MQ(self):
    def buscarAlgoritmo(valor,procesos):
         self.colalisto=procesos
-        print("cola listo",self.colalisto)
+        print("cola listo antes de buscar algoritmo",self.colalisto)
         if valor==0:
             print("RR")
             self.RR()
@@ -984,30 +1138,40 @@ class Ventana(QMainWindow):
  def iniciartiempo(self):
    #fcfs,prioridad,rr,srtf,mq
    if self.comboBox_Algoritmos.currentText() == 'PRIORIDADES':
-     self.tiempo[1]=[self.clock,0]
+     self.tiempo[1]=[self.clock,'']
    if self.comboBox_Algoritmos.currentText() == 'FCFS':
-     self.tiempo[0]=[self.clock,0]
+     self.tiempo[0]=[self.clock,'']
    if self.comboBox_Algoritmos.currentText() == 'RR':
-     self.tiempo[2]=[self.clock,0]
+     self.tiempo[2]=[self.clock,'']
    if self.comboBox_Algoritmos.currentText() == 'SRTF':
-     self.tiempo[3]=[self.clock,0]
+     self.tiempo[3]=[self.clock,'']
    if self.comboBox_Algoritmos.currentText() =='COLAS MULTINIVEL':
-     self.tiempo[4]=[self.clock,0]
+     self.tiempo[4]=[self.clock,'']
    
  def cerrartiempo(self):
    #fcfs,prioridad,rr,srtf,mq
+   if self.seterminoalgo==True:
+     clock=self.clock+1
+   else:
+     clock=self.clock
+   #----------------------------------------------------------
    if self.comboBox_Algoritmos.currentText() == 'PRIORIDADES':
-     self.tiempo[1][1]=self.clock+1
+     self.tiempo[1][1]=clock
    if self.comboBox_Algoritmos.currentText() == 'FCFS':
-     self.tiempo[0][1]=self.clock+1
+     self.tiempo[0][1]=clock
    if self.comboBox_Algoritmos.currentText() == 'RR':
-     self.tiempo[2][1]=self.clock+1
+     self.tiempo[2][1]=clock
    if self.comboBox_Algoritmos.currentText() == 'SRTF':
-     self.tiempo[3][1]=self.clock+1
+     self.tiempo[3][1]=clock
    if self.comboBox_Algoritmos.currentText() =='COLAS MULTINIVEL':
-     self.tiempo[4][1]=self.clock+1
+     self.tiempo[4][1]=clock
 
  def asignacion_memoria(self):
+  print('entre aqui')
+  if not self.dialogresultsim.pushButtonStop.isEnabled():
+    self.dialogresultsim.pushButtonStop.setEnabled(True)
+  if self.dialogresultsim.pushButtonStart.isEnabled():
+    self.dialogresultsim.pushButtonStart.setEnabled(False)
   for i in self.lista_graficos:
     i[2]='disponible'
     i[4]=0
@@ -1019,12 +1183,31 @@ class Ventana(QMainWindow):
   else:
     self.Mq=False
   self.clock=0
+  self.stop=False
+  #self.dialogresultsim.spinBoxClock.setValue(self.clock)
+  print('puede ser que entre de nuevo aqui?',self.clock)
+  self.dialogresultsim.spinBoxClock.setValue(0)
+  print(self.dialogresultsim.spinBoxClock.value())
+  self.rafagas={}
   self.mapaporclock=[]
+  self.colanuevoporclock=[]
+  self.colalistoporclock=[]
+  self.colabloqueadoporclock=[]
   self.colagantt=[]
   self.colaesgantt=[]
+  self.colaarribo=[]
+  self.colanuevo=[]
+  self.colalisto=[]
+  self.colabloqueado=[]
+  self.colaauxiliarantirupturadegantt=[]
+  
+  self.dialogresultsim.spinBoxClock.setMaximum(9999)
+  self.show_colalistoybloq()
   self.quantom = self.spinBox_Quantum.value()
   self.q=self.quantom
   if(self.radioButton_Fijas.isChecked()):
+    for i in self.lista_graficos:
+      i[2]='disponible'
     self.asignacion_fija()
   if(self.radioButton_Variables.isChecked()):
     #['idpart',dir_rli,part_size,idpc]
@@ -1032,6 +1215,8 @@ class Ventana(QMainWindow):
     self.asignacion_variable()
   if not self.dialogresultsim.pushButton_verGantt.isEnabled():
     self.dialogresultsim.pushButton_verGantt.setEnabled(True)
+  self.disable_stop()
+  self.enable_start()
   print('ACA MIRA LOS RESULTADO DE TIEMPO',self.tiempoespera)
   print('Y ACA VA RETORNO',self.tiemporetorno)
 
@@ -1046,16 +1231,24 @@ class Ventana(QMainWindow):
         if self.met_asig=='WF':
             self.mem_variable.sort(key = lambda m: (m[2]),reverse=True)
         i=0
+        print('cola nuevo antes de asignar',self.colanuevo)
         while i<len(self.colanuevo):
+            print('dentro del while grande',self.colanuevo)
             j=0
             tipo=self.mem_variable[j][3]
-            while (j<len(self.mem_variable) and (tipo!=0 or self.colanuevo[i][3]>self.mem_variable[j][2])):
+            while (j<len(self.mem_variable) and not(tipo==0 and self.colanuevo[i][3]<=self.mem_variable[j][2])):
                 tipo=self.mem_variable[j][3]
                 j=j+1
-            if j!=0:
+            if j>=len(self.mem_variable):
+              if j!=0:
                 j=j-1
+                print('entre')
+            tipo=self.mem_variable[j][3]
+            print('aber el tipo',tipo,'la memoria libre que encontro',self.mem_variable[j],'y el proceso',self.colanuevo[i],i)
             if j<len(self.mem_variable):
+                print('entre qui')
                 if tipo==0 and self.colanuevo[i][3]<=self.mem_variable[j][2]:
+                    print('pero no aqui o si?')
                     nuevotam=self.mem_variable[j][2]-self.colanuevo[i][3]
                     nuevodir=self.mem_variable[j][1]+self.colanuevo[i][3]
                     if nuevotam==0:
@@ -1083,9 +1276,11 @@ class Ventana(QMainWindow):
                         self.colas_multinivel[3].append(self.colanuevo[i].copy())
                       if self.colanuevo[i][2] >=self.limites_colas[4][0] and self.colanuevo[i][2] <=self.limites_colas[4][1] :
                         self.colas_multinivel[4].append(self.colanuevo[i].copy())
-                      print('ESTO TIENE QUE APARECER',self.colas_multinivel)
+                      print('Colas multinivel despues de asignar',self.colas_multinivel)
                     else:
                       self.colalisto.append(self.colanuevo[i].copy())
+
+                      print('Cola listo despues de asignar',self.colalisto)
                     #iniciar tiempo espera
                     if str(self.colanuevo[i][0]) in self.tiempoespera:
                       self.tiempo=self.tiempoespera[str(self.colanuevo[i][0])]
@@ -1117,6 +1312,7 @@ class Ventana(QMainWindow):
                       for k in range(len(self.result)):
                         self.result[k]=list(self.result[k])
                       print("aber",self.result)
+                      #
                       self.rafagas.update({str(self.colanuevo[i][0]):self.result})
                     except mysql.connector.Error as error:
                       print("Fallo al conectarse {}",format(error))
@@ -1132,6 +1328,8 @@ class Ventana(QMainWindow):
                 else:
                     i=i+1
         self.mem_variable.sort(key = lambda m: (m[1]))
+        
+        print("asi quedo la memoria",self.mem_variable)
    #['idpart',dir_rli,part_size,idpc]
    #['idpc','Descripcion','Prioridad','Tamaño','TI','TA'] 
    self.idpart=1
@@ -1140,7 +1338,9 @@ class Ventana(QMainWindow):
    print("variable")
    self.procesos_sin_asignar=self.listaprocesos.copy()
    self.procesos_sin_asignar.sort(key=lambda m: m[5])
+   print('procesos antes de asignacion',self.procesos_sin_asignar)
    while self.b:
+     print('SOY EL CLOOOOOOCK',self.clock)
      self.seterminoalgo=False
      self.colaarribo=[]
      while j<len(self.procesos_sin_asignar) and self.procesos_sin_asignar[j][5]==self.clock:
@@ -1148,12 +1348,43 @@ class Ventana(QMainWindow):
        j=j+1
      if len(self.colaarribo)>0:
        self.arribo()
-     print('cola nuevo',self.colanuevo)
+     print('cola nuevo antes de asignacion v',self.colanuevo)
      
      asignacion_v()
      self.colanuevoporclock.append(deepcopy(self.colanuevo))
-     self.colalistoporclock.append(deepcopy(self.colalisto))
+     if self.Mq:
+       aux=[]
+       for i in self.colas_multinivel:
+         aux.extend(deepcopy(i))
+       self.colalistoporclock.append(deepcopy(aux))
+     else:
+       self.colalistoporclock.append(deepcopy(self.colalisto))
      self.colabloqueadoporclock.append(deepcopy(self.colabloqueado))
+     print('colalistoporclock',self.colalistoporclock)
+     
+     #iniciar rafaga CPU
+     """
+     if self.colalisto:
+       print('entre aca?',self.clock)
+       rafita=self.rafagas[str(self.colalisto[0][0])]
+       if (not self.rafagacpuactualporclock) or (len(self.rafagacpuactualporclock)<=self.clock):
+         if rafita[0][3]!=0:
+           self.rafagacpuactualporclock.append(rafita[0].copy())
+     else:
+       self.rafagacpuactualporclock.append([])
+     """
+
+     #iniciar rafaga ES
+     """if self.colabloqueado:
+       rafita=self.rafagas[str(self.colabloqueado[0][0])]
+       if rafita[0][3]!=0:
+         if (not self.rafagaesactualporclock) or (len(self.rafagaesactualporclock)<=self.clock):
+           self.rafagaesactualporclock.append(deepcopy(self.rafagaesactual.copy()))
+           #self.rafagaesactualporclock.append(rafita[0].copy())
+     else:
+       self.rafagaesactualporclock.append([])
+     """
+     #
      self.show_colalistoybloq()
      self.ejecutar_algoritmos()
      self.entrada_salida()
@@ -1163,7 +1394,7 @@ class Ventana(QMainWindow):
        self.colaauxiliarantirupturadegantt=[]
      self.mapa_de_memoria_variable()
      
-     plt.waitforbuttonpress(timeout=1)
+     plt.waitforbuttonpress(timeout=0.5)
      self.mapaporclock.append(deepcopy(self.mem_variable))
     
      if self.seterminoalgo==True:
@@ -1174,8 +1405,10 @@ class Ventana(QMainWindow):
        #liberar particion
        self.liberarparticion()
      self.clock=self.clock+1
+     print('aqui aumenta supus',self.clock)
      self.dialogresultsim.spinBoxClock.setValue(self.clock)
-     print('asignacion',self.mem_variable)
+     
+     print('memoria despues de asignacion',self.mem_variable)
      
      if self.Mq:
        if (len(self.colanuevo)==0 and len(self.colaarribo)==0 and len(self.colabloqueado)==0 and len(self.procesos_sin_asignar)<=j and (len(self.colas_multinivel[0])==0) and (len(self.colas_multinivel[1])==0) and (len(self.colas_multinivel[2])==0) and (len(self.colas_multinivel[3])==0) and (len(self.colas_multinivel[4])==0)):
@@ -1183,7 +1416,10 @@ class Ventana(QMainWindow):
          self.mapaporclock.append(deepcopy(self.mem_variable))
          self.mapa_de_memoria_variable()
          self.colanuevoporclock.append(deepcopy(self.colanuevo))
-         self.colalistoporclock.append(deepcopy(self.colalisto))
+         aux=[]
+         for i in self.colas_multinivel:
+           aux.extend(deepcopy(i))
+         self.colalistoporclock.append(deepcopy(aux))
          self.colabloqueadoporclock.append(deepcopy(self.colabloqueado))
          self.show_colalistoybloq()
          
@@ -1197,18 +1433,38 @@ class Ventana(QMainWindow):
          self.colabloqueadoporclock.append(deepcopy(self.colabloqueado))
          self.show_colalistoybloq()
          
-
+ def enable_start(self):
+   if not self.dialogresultsim.pushButtonStart.isEnabled():
+     self.dialogresultsim.pushButtonStart.setEnabled(True)
+   
+ def disable_stop(self):
+   if self.dialogresultsim.pushButtonStop.isEnabled():
+     self.dialogresultsim.pushButtonStop.setEnabled(False)
 
  def show_colalistoybloq(self):
-   print(self.colalistoporclock)
-   colanuevo=deepcopy(self.colanuevoporclock[self.dialogresultsim.spinBoxClock.value()])
-   colalisto=deepcopy(self.colalistoporclock[self.dialogresultsim.spinBoxClock.value()])
-   colabloqueado=deepcopy(self.colabloqueadoporclock[self.dialogresultsim.spinBoxClock.value()])
+   #Obtencion de datos a mostrar
+   if self.colanuevoporclock:
+     colanuevo=deepcopy(self.colanuevoporclock[self.dialogresultsim.spinBoxClock.value()])
+   else:
+     colanuevo=[]
+   if self.colalistoporclock:
+     colalisto=deepcopy(self.colalistoporclock[self.dialogresultsim.spinBoxClock.value()])
+   else:
+     colalisto=[]
+   if self.colabloqueadoporclock:
+     colabloqueado=deepcopy(self.colabloqueadoporclock[self.dialogresultsim.spinBoxClock.value()])
+   else:
+     colabloqueado=[]
    print("COLA DE BLOQUEADOOOOOO",colabloqueado)
    print("COLA LISTOOOOOOOOOOOOO",colalisto)
+   print("COLA NUEVOOOOOOOOOOOOO",colanuevo)
+   
+   
+   #Grado multiprogramacion
    self.grado_multiprogramacion=len(colalisto)+len(colabloqueado)
    self.dialogresultsim.labelGradoMulti.setText("Grado Multiprogramacion:"+str(self.grado_multiprogramacion))  
-   #Limpiar 
+   
+   #Limpiar filas anteriores
    for w in range(self.dialogresultsim.tableWidgetCNuevo.rowCount()):
      self.dialogresultsim.tableWidgetCNuevo.removeRow(0)
 
@@ -1218,36 +1474,54 @@ class Ventana(QMainWindow):
    for w2 in range(self.dialogresultsim.tableWidgetCBloqueado.rowCount()):
      self.dialogresultsim.tableWidgetCBloqueado.removeRow(0)
 
+   #Mostrar datos actualizados
+   for z in range(0,len(colanuevo)):
+     self.dialogresultsim.tableWidgetCNuevo.insertRow(z)
+     self.dialogresultsim.tableWidgetCNuevo.setItem(z,0,QTableWidgetItem(str(colanuevo[z][0])))
+     
+   for z1 in range(0,len(colalisto)):
+     self.dialogresultsim.tableWidgetCListo.insertRow(z1)
+     self.dialogresultsim.tableWidgetCListo.setItem(z1,0,QTableWidgetItem(str(colalisto[z1][0])))
+     #self.dialogresultsim.tableWidgetCListo.setItem(z1,1,QTableWidgetItem(str(cpuactual[z1][3])))
+     self.dialogresultsim.tableWidgetCListo.setItem(z1,1,QTableWidgetItem(str(colalisto[z1][4])))
+     
    for z2 in range(0,len(colabloqueado)):
      self.dialogresultsim.tableWidgetCBloqueado.insertRow(z2)
      self.dialogresultsim.tableWidgetCBloqueado.setItem(z2,0,QTableWidgetItem(str(colabloqueado[z2][0])))
-     self.dialogresultsim.tableWidgetCBloqueado.setItem(z2,1,QTableWidgetItem(str(colabloqueado[z2][4])))
-
-   for z1 in range(0,len(colanuevo)):
-     self.dialogresultsim.tableWidgetCNuevo.insertRow(z1)
-     self.dialogresultsim.tableWidgetCNuevo.setItem(z1,0,QTableWidgetItem(str(colanuevo[z1][0])))
-     self.dialogresultsim.tableWidgetCNuevo.setItem(z1,1,QTableWidgetItem(str(colanuevo[z1][4])))
-
-   for z in range(0,len(colalisto)):
-     self.dialogresultsim.tableWidgetCListo.insertRow(z)
-     self.dialogresultsim.tableWidgetCListo.setItem(z,0,QTableWidgetItem(str(colalisto[z][0])))
-     self.dialogresultsim.tableWidgetCListo.setItem(z,1,QTableWidgetItem(str(colalisto[z][4])))
+     self.dialogresultsim.tableWidgetCBloqueado.setItem(z2,1,QTableWidgetItem(str(colabloqueado[z2][6])))
 
  def entrada_salida(self):
     print("entrada salida")
     if len(self.colabloqueado)>0:
         caux=self.colabloqueado[0].copy()
         caux[4]=1
-        self.colabloqueado[0][4]=self.colabloqueado[0][4]-1
+        self.colabloqueado[0][6]=self.colabloqueado[0][6]-1
         rafita=self.rafagas[str(self.colabloqueado[0][0])]
         print('ESTE ES RAFITA ANTES DE DECREMENTAR',rafita)
         rafita[0][3]=rafita[0][3]-1
         print("ESTE ES RAFITA DESPUES DE DECREMENTAR",rafita)
+        
         self.rafagas.update({str(self.colabloqueado[0][0]):rafita})
         print("RAFAGA",self.rafagas)
         if rafita[0][3]==0:
           if len(rafita)>1:
-            self.colalisto.append(self.colabloqueado[0].copy())
+            if self.Mq:
+              if self.colabloqueado[0][2] >=self.limites_colas[0][0] and self.colabloqueado[0][2] <=self.limites_colas[0][1] :
+                self.colas_multinivel[0].append(self.colabloqueado[0].copy())
+              if self.colabloqueado[0][2] >=self.limites_colas[1][0] and self.colabloqueado[0][2] <=self.limites_colas[1][1] :
+                self.colas_multinivel[1].append(self.colabloqueado[0].copy())
+              if self.colabloqueado[0][2] >=self.limites_colas[2][0] and self.colabloqueado[0][2] <=self.limites_colas[2][1] :
+                self.colas_multinivel[2].append(self.colabloqueado[0].copy())
+              if self.colabloqueado[0][2] >=self.limites_colas[3][0] and self.colabloqueado[0][2] <=self.limites_colas[3][1] :
+                self.colas_multinivel[3].append(self.colabloqueado[0].copy())
+              if self.colabloqueado[0][2] >=self.limites_colas[4][0] and self.colabloqueado[0][2] <=self.limites_colas[4][1] :
+                self.colas_multinivel[4].append(self.colabloqueado[0].copy())
+            else:
+              self.colalisto.append(self.colabloqueado[0].copy())
+              #todavia no borra rafita de ES
+              
+              print('entre aca en bloqueados volviendo a listo')
+              
           del rafita[0]
           self.rafagas.update({str(self.colabloqueado[0][0]):rafita})
           del self.colabloqueado[0]
@@ -1341,7 +1615,8 @@ class Ventana(QMainWindow):
                    self.colanuevo.pop(i)
                    self.lista_graficos.sort(key=lambda m: m[0]) 
                else:
-                   i=i+1
+                   j=j+1
+                   #i=i+1
            else:
                i=i+1  
    self.procesos_sin_asignar=self.listaprocesos.copy()
@@ -1358,7 +1633,13 @@ class Ventana(QMainWindow):
        self.arribo()
      asignacion_f()
      self.colanuevoporclock.append(deepcopy(self.colanuevo))
-     self.colalistoporclock.append(deepcopy(self.colalisto))
+     if self.Mq:
+       aux=[]
+       for i in self.colas_multinivel:
+         aux.extend(deepcopy(i))
+       self.colalistoporclock.append(deepcopy(aux))
+     else:
+       self.colalistoporclock.append(deepcopy(self.colalisto))
      self.colabloqueadoporclock.append(deepcopy(self.colabloqueado))
      self.show_colalistoybloq()
      
@@ -1368,9 +1649,10 @@ class Ventana(QMainWindow):
        self.colabloqueado.append(self.colaauxiliarantirupturadegantt.copy())
        self.colaauxiliarantirupturadegantt=[]
      self.mapa_de_memoria_fija()
-     plt.waitforbuttonpress(timeout=0.1)
-     #para fijo
+
+     plt.waitforbuttonpress(timeout=0.5)
      self.mapaporclock.append(deepcopy(self.lista_graficos))
+     
      if self.seterminoalgo==True:
        #cerrar tiempo retorno
        self.tiempo=self.tiemporetorno[str(self.procactual)]
@@ -1387,7 +1669,10 @@ class Ventana(QMainWindow):
          self.mapaporclock.append(deepcopy(self.lista_graficos))
          self.mapa_de_memoria_fija()
          self.colanuevoporclock.append(deepcopy(self.colanuevo))
-         self.colalistoporclock.append(deepcopy(self.colalisto))
+         aux=[]
+         for i in self.colas_multinivel:
+           aux.extend(deepcopy(i))
+         self.colalistoporclock.append(deepcopy(aux))
          self.colabloqueadoporclock.append(deepcopy(self.colabloqueado))
          self.show_colalistoybloq()
      else:
@@ -1400,19 +1685,37 @@ class Ventana(QMainWindow):
          self.colabloqueadoporclock.append(deepcopy(self.colabloqueado))
          self.show_colalistoybloq()
 
-     #self.show_colalistoybloq()
-     """if self.Mq:
-       if ((len(self.colas_multinivel[0])==0) and (len(self.colas_multinivel[1])==0) and (len(self.colas_multinivel[2])==0) and (len(self.colas_multinivel[3])==0) and (len(self.colas_multinivel[4])==0)):
-        b=False
-     else:
-       if len(self.colalisto)==0:
-        b=False"""
+  
+ def abortar(self):
+   self.b=False
+   self.stop=True
+   self.enable_start()
+   
+   print('ENTREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
 
  def mostrarResultSimulacion(self):
    #self.fig= plt.figure('Mapa de memoria',figsize=(15,2))
    #self.a,self.ax=plt.subplots(figsize=(15,2))
    #self.ax.set_title('Mapa de memoria')
-   
+   self.b=True
+   self.rafagas={}
+   self.mapaporclock=[]
+   self.colanuevoporclock=[]
+   self.colalistoporclock=[]
+   self.colabloqueadoporclock=[]
+   print('colalistoporclock',self.colalistoporclock)
+   self.colagantt=[]
+   self.colaesgantt=[]
+   self.colaarribo=[]
+   self.colanuevo=[]
+   self.colalisto=[]
+   self.colabloqueado=[]
+   self.colaauxiliarantirupturadegantt=[]
+
+   self.dialogresultsim.spinBoxClock.setMaximum(999999)
+   self.show_colalistoybloq()
+   if not self.dialogresultsim.pushButtonStart.isEnabled():
+     self.dialogresultsim.pushButtonStart.setEnabled(True)
    self.fig= plt.figure('Mapa de memoria',figsize=(15,2))
    plt.ion()
    self.ax=self.fig.subplots()
@@ -1420,15 +1723,6 @@ class Ventana(QMainWindow):
    if cont_sim_2davez >=0:
     self.dialogresultsim.move(640,315)
     self.dialogresultsim.exec_()
-    self.dialogresultsim.tableWidgetCListo.insertRow(0)
-    self.dialogresultsim.tableWidgetCListo.setItem(0,0,QTableWidgetItem('1'))
-    self.dialogresultsim.tableWidgetCListo.setItem(0,1,QTableWidgetItem('5'))
-    self.dialogresultsim.tableWidgetCListo.insertRow(1)
-    self.dialogresultsim.tableWidgetCListo.setItem(1,0,QTableWidgetItem('2'))
-    self.dialogresultsim.tableWidgetCListo.setItem(1,1,QTableWidgetItem('10'))
-    self.dialogresultsim.tableWidgetCListo.insertRow(2)
-    self.dialogresultsim.tableWidgetCListo.setItem(2,0,QTableWidgetItem('3'))
-    self.dialogresultsim.tableWidgetCListo.setItem(2,1,QTableWidgetItem('7'))
     cont_sim_2davez = 0
     if self.dialogresultsim.pushButton_verGantt.isEnabled():
       self.dialogresultsim.pushButton_verGantt.setEnabled(False)
@@ -1457,19 +1751,21 @@ class Ventana(QMainWindow):
    #fcfs,prioridad,rr,srtf,mq
    #Tiempo espera
    for keye in self.tiempoespera:
-     print("aberrrr",self.tiempoespera[keye])
+     #print("aberrrr",self.tiempoespera[keye])
      tiempoespera=(self.tiempoespera[keye])
      nueva_idpc= QTableWidgetItem(str(keye))
      self.dialogcompara.tableWidgetTEspera.insertRow(ultima_fila_tabla_TE)
      self.dialogcompara.tableWidgetTEspera.setItem(ultima_fila_tabla_TE,0,nueva_idpc)
      col=0
      for i in tiempoespera:
+       print('tiempo espera',i)
        if i:
          valor=i[1]-i[0]
          if promTE[col]:
            promTE[col]=promTE[col]+valor
          else:
            promTE[col]=valor
+           print('aber que pasa aca con TE',promTE[col])
          valor=str(valor)
          nTE[col]=nTE[col]+1
        else:
@@ -1481,15 +1777,18 @@ class Ventana(QMainWindow):
    #Promedio Tiempo Espera
    self.dialogcompara.tableWidgetTEsperaP.insertRow(0)
    for i in range(5):
-     if promTE[i]:
-       valor=str(round((promTE[i]/nTE[i]),2))
+     if promTE[i] or promTE[i]==0:
+       if promTE[i]==0:
+         valor=str(0)
+       else:
+         valor=str(round((promTE[i]/nTE[i]),2))
      else:
        valor='-'
      item=QTableWidgetItem(valor)
      self.dialogcompara.tableWidgetTEsperaP.setItem(0,i,item)
    #Tiempo retorno
    for keyr in self.tiemporetorno:
-     print("aberrrr",self.tiemporetorno[keyr])
+     #print("aberrrr",self.tiemporetorno[keyr])
      tiemporetorno=(self.tiemporetorno[keyr])
      nueva_idpc= QTableWidgetItem(str(keyr))
      self.dialogcompara.tableWidgetTRetorno.insertRow(ultima_fila_tabla_TR)
@@ -1500,6 +1799,7 @@ class Ventana(QMainWindow):
          valor=i[1]-i[0]
          if promTR[col]:
            promTR[col]=promTR[col]+valor
+           print('aber que pasa aca',promTR[col])
          else:
            promTR[col]=valor
          valor=str(valor)
@@ -1513,8 +1813,11 @@ class Ventana(QMainWindow):
    #Promedio Tiempo Retorno
    self.dialogcompara.tableWidgetTRetornoP.insertRow(0)
    for i in range(5):
-     if promTR[i]:
-       valor=str(round((promTR[i]/nTR[i]),2))
+     if promTR[i] or promTR[i]==0:
+       if promTR[i]==0:
+         valor=str(0)
+       else:
+         valor=str(round((promTR[i]/nTR[i]),2))
      else:
        valor='-' 
      item=QTableWidgetItem(valor)
@@ -1524,43 +1827,156 @@ class Ventana(QMainWindow):
 
 
  def limpiar_ventanaImportar(self):
+   self.listaImportarProcesos=[]
    for i6 in range(0,self.dialogoImportar.tableWidgetImportar.rowCount()):
      self.dialogoImportar.tableWidgetImportar.removeRow(0)
    self.listaIDprocesosventImportar=[]
-   self.dialogoImportar.label_PC.setText("Procesos:")
+   self.dialogoImportar.label_PC.setText("Procesos:") 
+   self.dialogoImportar.label_error.setText("")
+   self.dialogoImportar.labelEPI.setText("")
    if self.dialogoImportar.pushButtonImportar.isEnabled():
      self.dialogoImportar.pushButtonImportar.setEnabled(False)
 
  def update_tablaProcesos(self):
-   def cambio_estado():
-     print("cambie de estado")
-   
    print(self.listaImportarProcesos)
+   #
    print("Esta es la lista de los que puedo",self.listaIDprocesosventImportar)
+   self.dialogoImportar.label_error.setText("")
+   self.dialogoImportar.labelEPI.setText("")
+   supera_tam=False
+   proceso_cargado=False
+
    for i in self.listaImportarProcesos:
+     
      print(self.result[i-1])
-     #hago un item de tabla, al item de otra tabla
-     if i not in self.listaIDprocesos:
-      self.dialogoImportar.label_error.setText("")
-      self.listaIDprocesos.append(self.result[i-1][0])
-      self.listaprocesos.append([self.result[i-1][0],self.result[i-1][1],self.result[i-1][2],self.result[i-1][3],self.result[i-1][4],self.result[i-1][5]])
-      nueva_idpc= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,0))
-      nueva_desc= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,1))
-      nueva_prio= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,2))
-      nueva_tam= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,3))
-      nueva_ti= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,4))
-      nueva_ta= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,5))
-      ultima_fila_tabla_procesos= self.dialogo.tableWidgetProcesos.rowCount()
-      print("ultima fila",ultima_fila_tabla_procesos)
-      self.dialogo.tableWidgetProcesos.insertRow(ultima_fila_tabla_procesos)
-      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,0,nueva_idpc)
-      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,1,nueva_desc)
-      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,2,nueva_prio)
-      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,3,nueva_tam)
-      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,4,nueva_ti)
-      self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nueva_ta)
-     else:
-      self.dialogoImportar.label_error.setText("Error: el proceso seleccionado ya esta cargado")
+     
+     if self.radioButton_Variables.isChecked():
+       print("lista id de procesoooos ",self.listaIDprocesos)
+       
+       if self.result[i-1][3] >self.valor_memoria_procesos:
+           supera_tam=True
+       else: 
+         if self.result[i-1][0] not in self.listaIDprocesos:
+           #self.dialogoImportar.label_error.setText("")
+           self.listaIDprocesos.append(self.result[i-1][0])
+           self.listaprocesos.append([self.result[i-1][0],self.result[i-1][1],self.result[i-1][2],self.result[i-1][3],self.result[i-1][4],self.result[i-1][6],self.result[i-1][5]])
+           nueva_idpc= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,0))
+           nueva_desc= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,1))
+           nueva_prio= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,2))
+           nueva_tam= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,3))
+           nueva_ti= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,4))
+           nueva_ta= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,5))
+           ultima_fila_tabla_procesos= self.dialogo.tableWidgetProcesos.rowCount()
+           print("ultima fila",ultima_fila_tabla_procesos)
+           self.dialogo.tableWidgetProcesos.insertRow(ultima_fila_tabla_procesos)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,0,nueva_idpc)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,1,nueva_desc)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,2,nueva_prio)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,3,nueva_tam)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,4,nueva_ti)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nueva_ta)
+         else:
+           proceso_cargado=True
+           
+     if self.radioButton_Fijas.isChecked():
+       if self.result[i-1][3]>self.tamPartFijMax:
+         supera_tam=True
+         #self.dialogoImportar.labelEPI.setText("Tamaño procesos invalidos. Controlar procesos cargados")
+         """if self.comboBox_Algoritmos.isEnabled():
+           self.comboBox_Algoritmos.setEnabled(False)
+
+         if self.label_Algoritmo.isEnabled():
+           self.label_Algoritmo.setEnabled(False)
+    
+         if self.spinBox_Quantum.isEnabled():
+           self.spinBox_Quantum.setEnabled(False)
+
+         if self.label_Quantum.isEnabled():
+           self.label_Quantum.setEnabled(False)
+        
+         if self.pushButton_AceptarProc.isEnabled():
+           self.pushButton_AceptarProc.setEnabled(False)
+
+         if self.pushButtonComparar.isEnabled():
+           self.pushButtonComparar.setEnabled(True)
+
+         if self.pushButton_Simular.isEnabled():
+           self.pushButton_Simular.setEnabled(False)"""
+       else:
+         """
+         self.dialogoImportar.labelEPI.setText("")
+         if not self.comboBox_Algoritmos.isEnabled():
+           
+           self.comboBox_Algoritmos.setEnabled(True)
+
+         if not self.label_Algoritmo.isEnabled():
+           self.label_Algoritmo.setEnabled(True)
+    
+         if not self.spinBox_Quantum.isEnabled():
+           self.spinBox_Quantum.setEnabled(True)
+
+         if not self.label_Quantum.isEnabled():
+           self.label_Quantum.setEnabled(True)
+        
+         if not self.pushButton_AceptarProc.isEnabled():
+           self.pushButton_AceptarProc.setEnabled(True)
+
+         if not self.pushButtonComparar.isEnabled():
+           self.pushButtonComparar.setEnabled(True)
+
+         if not self.pushButton_Simular.isEnabled():
+           self.pushButton_Simular.setEnabled(True)
+         """
+         if self.result[i-1][0] not in self.listaIDprocesos:
+           #self.dialogoImportar.label_error.setText("")
+           self.listaIDprocesos.append(self.result[i-1][0])
+           self.listaprocesos.append([self.result[i-1][0],self.result[i-1][1],self.result[i-1][2],self.result[i-1][3],self.result[i-1][4],self.result[i-1][6],self.result[i-1][5]])
+           nueva_idpc= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,0))
+           nueva_desc= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,1))
+           nueva_prio= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,2))
+           nueva_tam= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,3))
+           nueva_ti= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,4))
+           nueva_ta= QTableWidgetItem(self.dialogoImportar.tableWidgetImportar.item(i-1,5))
+           ultima_fila_tabla_procesos= self.dialogo.tableWidgetProcesos.rowCount()
+           print("ultima fila",ultima_fila_tabla_procesos)
+           self.dialogo.tableWidgetProcesos.insertRow(ultima_fila_tabla_procesos)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,0,nueva_idpc)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,1,nueva_desc)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,2,nueva_prio)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,3,nueva_tam)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,4,nueva_ti)
+           self.dialogo.tableWidgetProcesos.setItem(ultima_fila_tabla_procesos,5,nueva_ta)
+         else:
+           proceso_cargado=True
+           #self.dialogoImportar.label_error.setText("Error: el proceso seleccionado ya esta cargado")
+   
+     
+     
+     print('aaaaa',self.listaIDprocesos)
+   
+   if supera_tam:
+     self.dialogoImportar.labelEPI.setText("Tamaño procesos invalidos. Controlar procesos cargados")
+     """if self.comboBox_Algoritmos.isEnabled():
+       self.comboBox_Algoritmos.setEnabled(False)
+     if self.label_Algoritmo.isEnabled():
+       self.label_Algoritmo.setEnabled(False)
+     if self.spinBox_Quantum.isEnabled():
+       self.spinBox_Quantum.setEnabled(False)
+     if self.label_Quantum.isEnabled():
+       self.label_Quantum.setEnabled(False) 
+     if self.pushButton_AceptarProc.isEnabled():
+       self.pushButton_AceptarProc.setEnabled(False)
+     if self.pushButtonComparar.isEnabled():
+       self.pushButtonComparar.setEnabled(True)
+     if self.pushButton_Simular.isEnabled():
+       self.pushButton_Simular.setEnabled(False)"""
+      #si, parece que si
+
+   if proceso_cargado:
+     self.dialogoImportar.label_error.setText("Error: el proceso seleccionado ya esta cargado")
+  
+
+
    """  
    if not self.pushButton_AceptarProc.isEnabled():
      self.pushButton_AceptarProc.setEnabled(True)
@@ -1631,7 +2047,7 @@ class Ventana(QMainWindow):
        ys.append(elemento[2])
        i=i+1
    results={'mem':ys}
-   print(results)
+   #print(results)
    labels = list(results.keys())
    data = np.array(list(results.values()))
    data_cum = data.cumsum(axis=1)
@@ -1641,7 +2057,7 @@ class Ventana(QMainWindow):
    self.ax.invert_yaxis()
    self.ax.xaxis.set_visible(True)
    self.ax.set_xlim(0, np.sum(data, axis=1).max())
-   print('llegue aqui')
+   #print('llegue aqui')
    #verrrrrrrrrrrrr
    for i, (colname, color) in enumerate(zip(category_names, category_colors)):
      widths = data[:, i]
@@ -1666,13 +2082,13 @@ class Ventana(QMainWindow):
    ys=[]
    i=0
    for elemento in self.lista_graficos:
-     print(elemento)
+     #print(elemento)
      if len(elemento)>1:
        category_names.append('Idpart: '+str(elemento[0])+'\nIdpc:    '+ str(elemento[4])+'\nFragInt:'+str(elemento[5]))
        ys.append(elemento[3])
        i=i+1       
    results={'mem':ys}
-   print(results)
+   #print(results)
    labels = list(results.keys())
    data = np.array(list(results.values()))
    data_cum = data.cumsum(axis=1)
@@ -1683,7 +2099,7 @@ class Ventana(QMainWindow):
    self.ax.invert_yaxis()
    self.ax.xaxis.set_visible(True)
    self.ax.set_xlim(0, np.sum(data, axis=1).max())
-   print('llegue aqui')
+   #print('llegue aqui')
    for i, (colname, color) in enumerate(zip(category_names, category_colors)):
      widths = data[:, i]
      starts = data_cum[:, i] - widths
@@ -1725,7 +2141,7 @@ class Ventana(QMainWindow):
         prioridad = QTableWidgetItem(str(i[2]))
         tam= QTableWidgetItem(str(i[3]))
         ti= QTableWidgetItem(str(i[4]))
-        ta= QTableWidgetItem(str(i[5]))
+        ta= QTableWidgetItem(str(i[6]))
         print("estoy tratando de mostrar en la tablaaaa")
         self.dialogoImportar.tableWidgetImportar.insertRow(contador_rows_importar)
         self.dialogoImportar.tableWidgetImportar.setItem(contador_rows_importar,0,idpc)
@@ -1747,14 +2163,54 @@ class Ventana(QMainWindow):
  def mostrarTablaImportar(self):
    self.dialogoImportar.exec_()
    self.limpiar_ventanaImportar()
-  
+
+ def borrarProcesoCargado(self):
+   nrorow=0
+   nropro=0
+   booleano=False
+   for i in range(self.dialogo.tableWidgetProcesos.rowCount()):
+     item=int(self.dialogo.tableWidgetProcesos.item(i,0).text())
+     if (self.dialogo.spinBoxQuitar.value())==item:
+       nropro=item
+       nrorow=i
+       booleano=True
+   if booleano:
+     self.dialogo.tableWidgetProcesos.removeRow(nrorow)
+     noseencontro=True
+     i=0
+     while noseencontro:
+       if self.listaprocesos[i][0]==nropro:
+         self.listaprocesos.pop(i)
+         noseencontro=False
+       else:
+         i=i+1
+       print(self.listaprocesos)
+     i=0
+     noseencontro=True
+     while noseencontro:
+       print(self.listaIDprocesos[i])
+       print('nropro',nropro)
+       if self.listaIDprocesos[i]==nropro:
+         self.listaIDprocesos.pop(i)
+         noseencontro=False
+       else:
+         i=i+1
+     self.checkproceso()
+     print(self.listaIDprocesos)
+
+         
+   
+   
+
    
  def agregar_fila_particiones(self):
    global cont_agregar_particion
-
+   cont_agregar_particion=self.carga_particionFijas.tableWidgetCargaParticion.rowCount()
    tampart= int(self.carga_particionFijas.spinBoxTam.value())
    global rli
    global conts
+   if cont_agregar_particion==0:
+     rli=0
    if ((self.valor_memoria_procesos - tampart>=0) and self.valor_memoria_procesos != 0):
      self.valor_memoria_procesos= self.valor_memoria_procesos - tampart
      self.carga_particionFijas.label_MemDisp.setText("Memoria Disponible: "+str(round(self.valor_memoria_procesos,2)) + " KB")
@@ -1772,9 +2228,9 @@ class Ventana(QMainWindow):
      rli=rli+tampart
      if(tampart>self.tamPartFijMax):
        self.tamPartFijMax=tampart
-       print("estoy aqui",self.tamPartFijMax)
+       print("tamano de particion fija maxima",self.tamPartFijMax)
      
-     print(self.lista_graficos)
+     print("particion fija",self.lista_graficos)
      self.carga_particionFijas.spinBoxTam.setValue(0)
      self.carga_particionFijas.spinBoxTam.setMaximum(int(self.valor_memoria_procesos))
 
@@ -1843,17 +2299,38 @@ class Ventana(QMainWindow):
    category_names=[]
    ys=[]
    try:
-     global conts
+     connection = mysql.connector.connect(host=self.host,
+     database = self.database,
+     user=self.user,
+     password=self.password)
+     mySql_insert_query= """DELETE FROM part_fija WHERE idsim =(%s)""" 
+     recordTuple=(conts,)
+     cursor= connection.cursor()
+     cursor.execute(mySql_insert_query,recordTuple) # aca le paso la tupla, para que remplaze por los %s en la consulta
+     connection.commit()
+     print("se elimino las particiones anteriores") #esto es un control que hago que se muestre en terminal para saber si los datos se insertaron o no
+     cursor.close()
+   except mysql.connector.Error as error:
+     print("Fallo al conectarse {}",format(error))
+   else:
+     pass
+   finally:
+     if(connection.is_connected()):
+      connection.close()
+      print("Conexion cerrada")    
+   #Insertar particiones
+   try:
+     #global conts
      connection = mysql.connector.connect(host=self.host,
      database = self.database,
      user=self.user,
      password=self.password)
      for elemento in self.lista_graficos:
-       print(elemento)
+       #print(elemento)
        if len(elemento)>1:
          category_names.append(elemento[0])
          ys.append(elemento[3])
-         print(conts, elemento[0], elemento[1], elemento[2], elemento[5],elemento[3])
+         #print(conts, elemento[0], elemento[1], elemento[2], elemento[5],elemento[3])
          mySql_insert_query= """INSERT INTO part_fija (idsim, idpart, dir_rli, estado, frag_int, part_size)
          VALUES (%s,%s,%s,%s,%s,%s)""" 
          recordTuple=(conts, elemento[0], elemento[1], elemento[2], elemento[5],elemento[3])
@@ -1871,7 +2348,7 @@ class Ventana(QMainWindow):
       connection.close()
       print("Conexion cerrada")      
    results={'mem':ys}
-   print(results)
+   #print(results)
    labels = list(results.keys())
    data = np.array(list(results.values()))
    data_cum = data.cumsum(axis=1)
@@ -1970,6 +2447,7 @@ class Ventana(QMainWindow):
    #aaaaa
    if(self.radioButton_Fijas.isChecked()):
      self.tamPartFijMax=0;
+     self.carga_particionFijas.spinBoxTam.setMinimum(1)
      self.carga_particionFijas.spinBoxTam.setMaximum(int(self.valor_memoria_procesos))
      self.carga_particionFijas.exec_()
      
@@ -1980,6 +2458,8 @@ class Ventana(QMainWindow):
        self.boton_GestProcesos.setEnabled(True)
    
  def variableselected(self):
+   if self.AceptarMem.isEnabled():
+     self.AceptarMem.setEnabled(False)
    self.radioButton_Worst.setEnabled(True)
    if self.radioButton_Best.isChecked():
      self.radioButton_Best.setChecked(False)
@@ -1990,6 +2470,8 @@ class Ventana(QMainWindow):
  
  def fijaselected(self):
    #hace un disable del radio button de worst fit
+   if self.AceptarMem.isEnabled():
+     self.AceptarMem.setEnabled(False)
    print(self.radioButton_Worst.isChecked())
    if self.radioButton_Worst.isChecked():
     self.radioButton_Worst.setChecked(False)
@@ -2096,9 +2578,14 @@ class Ventana(QMainWindow):
      print("select exitoso") #esto es un control que hago que se muestre en terminal para saber si los datos se insertaron o no
      cursor.close()
      #carga de rafagas de un proceso
+     #['idpc','Descripcion','Prioridad','Tamaño','TI','TA','TI-ES','InicioGantt','FinGantt']
      sumti=0
+     sumties=0
      for i in range(self.dialogo.tableWidgetRafaga.rowCount()):
-         sumti=sumti+int(self.dialogo.tableWidgetRafaga.item(i,1).text())
+         if self.dialogo.tableWidgetRafaga.item(i,0).text()=='CPU':
+           sumti=sumti+int(self.dialogo.tableWidgetRafaga.item(i,1).text())
+         if self.dialogo.tableWidgetRafaga.item(i,0).text()=='ES':
+           sumties=sumties+int(self.dialogo.tableWidgetRafaga.item(i,1).text())
          mySql_insert_query= """INSERT INTO rafagas(idraf,idpc,raf_type,ti)
          VALUES
          (%s,%s,%s,%s)"""
@@ -2109,9 +2596,9 @@ class Ventana(QMainWindow):
          print("Record se inserto bien ") #esto es un control que hago que se muestre en terminal para saber si los datos se insertaron o no
          cursor.close() 
      #actualizar valor de ti del proceso actual
-     mySql_update_query="""update procesos set ti=(%s) where idpc = (%s)"""
+     mySql_update_query="""update procesos set ti=(%s), ti_es=(%s) where idpc = (%s)"""
      cursor= connection.cursor()
-     recordTuple=(sumti,codpc)
+     recordTuple=(sumti,sumties,codpc)
      cursor.execute(mySql_update_query,recordTuple) # aca le paso la tupla, para que remplaze por los %s en la consulta
      connection.commit()
      print("ti actualizado") #esto es un control que hago que se muestre en terminal para saber si los datos se insertaron o no
@@ -2120,13 +2607,14 @@ class Ventana(QMainWindow):
      global contpc
      if codpc not in self.listaIDprocesos:
       self.listaIDprocesos.append(codpc)
-      self.listaprocesos.append([codpc,descripcion,p_priori,tam_pro,sumti,t_arribo])
+      self.listaprocesos.append([codpc,descripcion,p_priori,tam_pro,sumti,t_arribo,sumties])
       id_pc = QTableWidgetItem(str(codpc))
       desc = QTableWidgetItem(descripcion)
       prio= QTableWidgetItem(str(p_priori))
       tampc = QTableWidgetItem(str(tam_pro))
       ti = QTableWidgetItem(str(sumti))
       ta = QTableWidgetItem(str(t_arribo))
+      contpc=self.dialogo.tableWidgetProcesos.rowCount()
       self.dialogo.tableWidgetProcesos.insertRow(contpc)
       self.dialogo.tableWidgetProcesos.setItem(contpc,0,id_pc)
       self.dialogo.tableWidgetProcesos.setItem(contpc,1,desc)
@@ -2146,9 +2634,12 @@ class Ventana(QMainWindow):
       print("Conexion cerrada")
 
    limpiar_carga_rafagas()
+   if self.dialogo.pushButtonCargar.isEnabled():
+     self.dialogo.pushButtonCargar.setEnabled(False)
    #aca limpio los valores que quedaron antes de cargar 
    
  def abrirDialogoCarga(self): #bueno, sentiende por el nombre lo que hace el metodo supongo, ejecuta la nueva ventana o dialogo de carga
+   self.dialogo.spinBoxTamProc.setMinimum(1)
    self.dialogo.exec_()
    self.dialogo.lineEditDescrip.setText('')
    #self.dialogo.spinBoxTiempoarr.setText('')
@@ -2172,12 +2663,12 @@ class Ventana(QMainWindow):
     for x in self.colagantt:
       res= 'Proceso '+str(x[0])
       #asumiendo que todo el formato de aca abajo esta en cada x que voy iterando
-      #['idpc','Descripcion','Prioridad','Tamaño','TI','TA','InicioGantt','FinGantt']
-      df.append(dict(Task="CPU",Start=x[6],Finish=x[7],Resource=res))
+      #['idpc','Descripcion','Prioridad','Tamaño','TI','TA','TI-ES','InicioGantt','FinGantt']
+      df.append(dict(Task="CPU",Start=x[7],Finish=x[8],Resource=res))
     
     for y in self.colaesgantt:
       res= 'Proceso '+str(y[0])
-      df.append(dict(Task="ES", Start=y[6], Finish = y[7],Resource=res))
+      df.append(dict(Task="ES", Start=y[7], Finish = y[8],Resource=res))
       
 
     fig = ff.create_gantt(df,index_col='Resource',show_colorbar=True,group_tasks=True,width=1200,height=400)
@@ -2193,8 +2684,8 @@ class Ventana(QMainWindow):
     self.web = QWebEngineView() #aca hago una instancia de QWebEngineView, que es necesario para que se pueda mostrar el diagrama en una ventana
     self.web.load(local_url) #cargo la url, que seria la ruta del archivo generado .html
     self.web.setWindowTitle("Diagrama de Gantt")
-    self.web.resize(900,400) #defino nombre y tamaño de la ventana
-    self.web.move(0,500)
+    self.web.resize(1500,400) #defino nombre y tamaño de la ventana
+    self.web.move(0,700)
     self.web.show() #muestro la ventana
     
 #estas lineas son para que se ejecute la ventana al inciar o ejecutar este archivo .pyw
